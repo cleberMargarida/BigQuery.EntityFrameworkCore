@@ -1,6 +1,7 @@
 ﻿using BigQuery.EntityFrameworkCore.Utils;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -415,8 +416,6 @@ namespace BigQuery.EntityFrameworkCore
                 Table table => VisitConstantTable(table),
                 String str => VisitConstantString(str),
                 DateTime dateTime => VisitConstantDateTime(dateTime),
-                DateOnly date => VisitConstantDate(date),
-                TimeOnly time => VisitConstantTime(time),
                 TimeSpan timeSpan => VisitConstantTimeSpan(timeSpan),
                 _ => VisitConstantDefault()
             };
@@ -449,16 +448,6 @@ namespace BigQuery.EntityFrameworkCore
             Expression VisitConstantDateTime(DateTime dateTime)
             {
                 _stringBuilder.Append(dateTime.ToString(Formats.DefaultDateTimeFormat));
-                return node;
-            }
-            Expression VisitConstantDate(DateOnly date)
-            {
-                _stringBuilder.Append(date.ToString(Formats.DateOnlyFormat));
-                return node;
-            }
-            Expression VisitConstantTime(TimeOnly time)
-            {
-                _stringBuilder.Append(time.ToString(Formats.TimeOnlyFormat));
                 return node;
             }
             Expression VisitConstantTimeSpan(TimeSpan timeSpan)
@@ -512,7 +501,7 @@ namespace BigQuery.EntityFrameworkCore
 
         protected override Expression VisitNew(NewExpression node)
         {
-            foreach (var argument in node.Arguments.Take(0..^1))
+            foreach (var argument in node.Arguments.SkipLast(1))
             {
                 Visit(argument);
                 _stringBuilder.Append(", ");
