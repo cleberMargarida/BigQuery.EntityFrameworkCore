@@ -4,7 +4,7 @@ BigQuery.EntityFrameworkCore is C# Entity Framework Core to provide a high-level
 
 Installation
 ---
-To add ntityFramework Core to BigQuery an application, install the NuGet package for the database provider you want to use.
+To add EntityFramework Core to BigQuery an application, install the NuGet package for the database provider you want to use.
 
 #### Packages from NuGet:
 - [BigQuery.EntityFrameworkCore](https://nuget.org/packages/BigQuery.EntityFrameworkCore)
@@ -74,7 +74,7 @@ Configuration
   ```csharp
   public class MyBqContext : BqContext
   {
-    public MyDataset MyDataset { get; set; }
+      public MyDataset MyDataset { get; set; }
   }
   ```
 * In service configurations add the BigQuery EntityFrameworkCore following:
@@ -82,11 +82,45 @@ Configuration
   services.AddBqContext<MyBqContext>(x =>
   {
       x.ProjectId = "your-project-id";
-      x.GoogleCredential = GoogleCredential.FromJson(Configuration["google_auth"]);
+      x.GoogleCredential = GoogleCredential.FromJson(Configuration["your_google_auth_key"]);
   });
   ```
+Usage
+---
+With the BqContext properly injected, we can get it in the constructor of the service, store it on a field to use it. 
+```csharp
+private readonly MyBqContext _context;
 
+public YourService(MyBqContext context)
+{
+    _context = context;
+}
+```
 
+  #### Samples
+```sql
+Enumerator
+_context.MyDataset.Products.ToList()
+SELECT Id Id, ProductName Name FROM data.Product AS Product
+
+Where
+_context.MyDataset.Products.Where(x => x.Id == 1)
+SELECT Id Id, ProductName Name FROM data.Product AS Product WHERE Id = 1
+
+Select
+_context.MyDataset.Products.Select(x => x.Id)
+SELECT Id Id FROM data.Product AS Product
+
+OrderBy
+_context.MyDataset.Products.OrderBy(x => x.Id)
+SELECT Id Id, ProductName Name FROM data.Product AS Product ORDER BY Id
+
+OrderByDescending
+_context.MyDataset.Products.OrderByDescending(x => x.Id)
+SELECT Id Id, ProductName Name FROM data.Product AS Product ORDER BY Id DESC
+```
+
+And others old good method chain.
 
 Author Info
 ---
