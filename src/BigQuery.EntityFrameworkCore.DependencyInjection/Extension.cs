@@ -3,6 +3,9 @@ using BigQuery.EntityFrameworkCore;
 using BigQuery.EntityFrameworkCore.Utils;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
+using System.Linq;
+using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -11,12 +14,12 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddBqContext<TBqContext>(this IServiceCollection services, Action<BqContextOptions> options) where TBqContext : BqContext
         {
             var datasets = typeof(TBqContext).GetProperties()
-                .Where(prop => prop.PropertyType.IsAssignableTo(typeof(Dataset)))
+                .Where(prop => typeof(Dataset).IsAssignableFrom(prop.PropertyType))
                 .ToArray();
 
             var tablesByDataset = datasets.ToDictionary(
                 x => x.PropertyType,
-                x => x.PropertyType.GetProperties().Where(prop => prop.PropertyType.IsAssignableTo(typeof(Table))).ToArray());
+                x => x.PropertyType.GetProperties().Where(prop => typeof(Table).IsAssignableFrom(prop.PropertyType)).ToArray());
 
             var bqContextOptions = new BqContextOptions();
             options.Invoke(bqContextOptions);
