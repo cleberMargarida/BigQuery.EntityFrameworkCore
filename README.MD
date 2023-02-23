@@ -4,7 +4,7 @@ BigQuery.EntityFrameworkCore is C# Entity Framework Core to provide a high-level
 
 Installation
 ---
-To add EntityFramework Core to BigQuery an application, install the NuGet package for the database provider you want to use.
+To add BigQuery EntityFramework Core to an application, install the NuGet package for the bigquery.
 
 #### Packages from NuGet:
 - [BigQuery.EntityFrameworkCore](https://nuget.org/packages/BigQuery.EntityFrameworkCore)
