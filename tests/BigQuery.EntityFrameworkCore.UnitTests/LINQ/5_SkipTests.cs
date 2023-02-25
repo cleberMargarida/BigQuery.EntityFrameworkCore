@@ -32,7 +32,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         public void DataProducts_Take20Skip10ToString_ShouldReturnExpected()
         {
             var query = _context.Data.Products.Take(20).Skip(10).ToString();
-            Assert.Equal("SELECT Id Id, ProductName Name FROM data.Product AS Product LIMIT 20 OFFSET 10", query);
+            Assert.Equal("SELECT Product.Id, Product.ProductName FROM data.Product AS Product LIMIT 20 OFFSET 10", query);
         }
     }
 }

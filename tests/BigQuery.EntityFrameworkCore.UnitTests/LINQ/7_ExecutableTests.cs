@@ -27,7 +27,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_First_VerifyExpectedQuery()
         {
-            string expected = "SELECT Id Id, ProductName Name FROM data.Product AS Product LIMIT 1";
+            string expected = "SELECT Product.Id, Product.ProductName FROM data.Product AS Product LIMIT 1";
             _mock.Setup(x => x.GetResult<Product>(expected)).Returns(new Product()).Verifiable();
             _context.Data.Products.First();
             _mock.Verify();
@@ -37,7 +37,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_FirstOrDefault_VerifyExpectedQuery()
         {
-            string expected = "SELECT Id Id, ProductName Name FROM data.Product AS Product LIMIT 1";
+            string expected = "SELECT Product.Id, Product.ProductName FROM data.Product AS Product LIMIT 1";
             _mock.Setup(x => x.GetResult<Product>(expected)).Verifiable();
             _context.Data.Products.FirstOrDefault();
             _mock.Verify();
@@ -47,7 +47,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_Single_VerifyExpectedQuery()
         {
-            string expected = "SELECT Id Id, ProductName Name FROM data.Product AS Product LIMIT 1";
+            string expected = "SELECT Product.Id, Product.ProductName FROM data.Product AS Product LIMIT 1";
             _mock.Setup(x => x.GetResult<Product>(expected)).Returns(new Product()).Verifiable();
             _context.Data.Products.Single();
             _mock.Verify();
@@ -57,7 +57,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_SingleOrDefault_VerifyExpectedQuery()
         {
-            string expected = "SELECT Id Id, ProductName Name FROM data.Product AS Product LIMIT 1";
+            string expected = "SELECT Product.Id, Product.ProductName FROM data.Product AS Product LIMIT 1";
             _mock.Setup(x => x.GetResult<Product>(expected)).Verifiable();
             _context.Data.Products.SingleOrDefault();
             _mock.Verify();
@@ -67,9 +67,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_Last_VerifyExpectedQuery()
         {
-            string expected = "SELECT Id Id, ProductName Name " +
-                              "FROM data.Product AS Product WHERE " +
-                              "Id = (SELECT MAX(Id) FROM data.Product AS Product)";
+            string expected = "SELECT Product.Id, Product.ProductName FROM data.Product AS Product WHERE Id = (SELECT MAX(Id) FROM data.Product AS Product)";
 
             _mock.Setup(x => x.GetResult<Product>(expected)).Returns(new Product()).Verifiable();
             _context.Data.Products.Last();
@@ -80,9 +78,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_LastOrDefault_VerifyExpectedQuery()
         {
-            string expected = "SELECT Id Id, ProductName Name " +
-                              "FROM data.Product AS Product WHERE " +
-                              "Id = (SELECT MAX(Id) FROM data.Product AS Product)";
+            string expected = "SELECT Product.Id, Product.ProductName FROM data.Product AS Product WHERE Id = (SELECT MAX(Id) FROM data.Product AS Product)";
 
             _mock.Setup(x => x.GetResult<Product>(expected)).Verifiable();
             _context.Data.Products.LastOrDefault();
@@ -93,8 +89,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_All_VerifyExpectedQuery()
         {
-            string expected = "SELECT COUNTIF (Id > 999) = COUNT(*) " +
-                              "FROM (SELECT Id Id, ProductName Name FROM data.Product AS Product)";
+            string expected = "SELECT COUNTIF (Product.Id > 999) = COUNT(*) FROM (SELECT Product.Id, Product.ProductName FROM data.Product AS Product)";
 
             _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
             _context.Data.Products.All(x => x.Id > 999);
@@ -105,8 +100,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_Any_VerifyExpectedQuery()
         {
-            string expected = "SELECT COUNTIF (Id > 999) > 0 " +
-                              "FROM (SELECT Id Id, ProductName Name FROM data.Product AS Product)";
+            string expected = "SELECT COUNTIF (Product.Id > 999) > 0 FROM (SELECT Product.Id, Product.ProductName FROM data.Product AS Product)";
 
             _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
             _context.Data.Products.Any(x => x.Id > 999);
@@ -117,7 +111,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_Max_VerifyExpectedQuery()
         {
-            string expected = "SELECT MAX(Id) FROM data.Product AS Product";
+            string expected = "SELECT MAX(Product.Id) FROM data.Product AS Product";
 
             _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
             _context.Data.Products.Max(x => x.Id);
@@ -128,7 +122,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_Min_VerifyExpectedQuery()
         {
-            string expected = "SELECT MIN(Id) FROM data.Product AS Product";
+            string expected = "SELECT MIN(Product.Id) FROM data.Product AS Product";
 
             _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
             _context.Data.Products.Min(x => x.Id);
@@ -139,7 +133,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_Sum_VerifyExpectedQuery()
         {
-            string expected = "SELECT SUM(Id) FROM data.Product AS Product";
+            string expected = "SELECT SUM(Product.Id) FROM data.Product AS Product";
 
             _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
             _context.Data.Products.Sum(x => x.Id);
@@ -150,7 +144,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         [Fact]
         public void DataProducts_Average_VerifyExpectedQuery()
         {
-            string expected = "SELECT AVG(Id) FROM data.Product AS Product";
+            string expected = "SELECT AVG(Product.Id) FROM data.Product AS Product";
 
             _mock.Setup(x => x.GetResult<double>(expected)).Verifiable();
             _context.Data.Products.Average(x => x.Id);

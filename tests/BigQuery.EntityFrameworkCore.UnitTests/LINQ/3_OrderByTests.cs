@@ -20,9 +20,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         public void DataProducts_OrderByIdToString_ShouldReturnExpected()
         {
             var query = _context.Data.Products.OrderBy(x => x.Id).ToString();
-            Assert.Equal("SELECT Id Id, ProductName Name " +
-                         "FROM data.Product AS Product " +
-                         "ORDER BY Id", query);
+            Assert.Equal("SELECT Product.Id, Product.ProductName FROM data.Product AS Product ORDER BY Product.Id", query);
         }
     }
 }

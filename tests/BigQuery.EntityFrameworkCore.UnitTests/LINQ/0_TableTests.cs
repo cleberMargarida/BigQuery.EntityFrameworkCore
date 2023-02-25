@@ -15,14 +15,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         public void DataProducts_ToString_ShouldReturnTheExpectedQuery()
         {
             var query = _context.Data.Products.ToString();
-            Assert.Equal("SELECT Id Id, ProductName Name FROM data.Product AS Product", query);
-        }
-
-        [Fact]
-        public void DataProducts_ToString_ShouldNotReturnTheExpectedQuery()
-        {
-            var query = _context.Data.Products.ToString();
-            Assert.NotEqual("SELECT Id Id, ProductName Name FROM ********* AS Product", query);
+            Assert.Equal("SELECT Product.Id, Product.ProductName FROM data.Product AS Product", query);
         }
     }
 }

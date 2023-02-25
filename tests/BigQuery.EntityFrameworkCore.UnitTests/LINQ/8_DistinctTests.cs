@@ -15,7 +15,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         public void DataProducts_DistinctToString_ShouldReturnExpected()
         {
             var query = _context.Data.Products.Distinct().ToString();
-            Assert.Equal("SELECT DISTINCT Id Id, ProductName Name FROM data.Product AS Product", query);
+            Assert.Equal("SELECT DISTINCT Product.Id, Product.ProductName FROM data.Product AS Product", query);
         }
     }
 }

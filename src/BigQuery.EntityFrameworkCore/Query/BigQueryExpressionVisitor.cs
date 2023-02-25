@@ -101,10 +101,10 @@ namespace BigQuery.EntityFrameworkCore
             return _stringBuilder.ToString();
         }
 
+        protected string? LastTable { get; set; }
         internal string? LastCall { get; private set; }
-
-        BigQuerySelectExpressionVisitor NewSelectVisitor => new BigQuerySelectExpressionVisitor();
-        BigQueryExpressionVisitor NewVisitor => new BigQueryExpressionVisitor();
+        protected BigQueryExpressionVisitor NewVisitor => new BigQueryExpressionVisitor();
+        protected BigQueryExpressionVisitor NewJoinVisitor => new BigQueryJoinExpressionVisitor();
 
 
         [return: NotNullIfNotNull("expression")]
@@ -244,7 +244,7 @@ namespace BigQuery.EntityFrameworkCore
         protected void TranslateSelect(MethodCallExpression node)
         {
             _stringBuilder.Append("SELECT ");
-            _stringBuilder.Append(NewSelectVisitor.Print(node.Arguments.Last()));
+            _stringBuilder.Append(NewVisitor.Print(node.Arguments.Last()));
             Visit(node.Arguments.First());
         }
 
@@ -357,12 +357,16 @@ namespace BigQuery.EntityFrameworkCore
 
         protected void TranslateDistinct(MethodCallExpression node)
         {
-            if (_stringBuilder.Length is 0)
+            if (_stringBuilder.Length is not 0)
             {
-                _stringBuilder.Append("SELECT DISTINCT ");
-                var columns = GetColumnsFromProperties(node.Type.GenericTypeArguments[0].GetProperties());
-                _stringBuilder.Append(string.Join(", ", columns));
+                return;
             }
+
+            LastTable = node.Type.GenericTypeArguments[0].Name;
+
+            _stringBuilder.Append("SELECT DISTINCT ");
+            var columns = GetColumnsFromProperties(node.Type.GenericTypeArguments[0].GetProperties());
+            _stringBuilder.Append(string.Join(", ", columns));
 
             Visit(node.Arguments.First());
         }
@@ -401,7 +405,15 @@ namespace BigQuery.EntityFrameworkCore
 
         protected void TranslateJoin(MethodCallExpression node)
         {
-            throw new NotImplementedException();
+            _stringBuilder.Append("SELECT ");
+            Visit(node.Arguments[4]);
+            Visit(node.Arguments[0]);
+            _stringBuilder.Append(" INNER JOIN ");
+            _stringBuilder.Append(NewJoinVisitor.Print(node.Arguments[1]));
+            _stringBuilder.Append(" ON ");
+            Visit(node.Arguments[2]);
+            _stringBuilder.Append(" = ");
+            Visit(node.Arguments[3]);
         }
 
         protected void TranslateGroupBy(MethodCallExpression node)
@@ -423,6 +435,7 @@ namespace BigQuery.EntityFrameworkCore
             Expression VisitConstantTable(Table table)
             {
                 Type tableType = node.Type.GenericTypeArguments[0];
+                LastTable = tableType.Name;
 
                 if (_stringBuilder.Length is 0)
                 {
@@ -482,7 +495,9 @@ namespace BigQuery.EntityFrameworkCore
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            _stringBuilder.Append(node.Member.GetCustomAttribute<ColumnAttribute>()?.Name ?? node.Member.Name);
+            var source = node.Expression.Type.Name;
+            var member = node.Member.GetCustomAttribute<ColumnAttribute>()?.Name ?? node.Member.Name;
+            _stringBuilder.Append(source + "." + member);
             return node;
         }
 
@@ -514,17 +529,30 @@ namespace BigQuery.EntityFrameworkCore
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
+            var parameterIsRoot = LastTable is null;
+
+            if (parameterIsRoot)
+            {
+                var columns = GetColumnsFromProperties(node.Type.GetProperties(), node.Type.Name);
+                _stringBuilder.Append(string.Join(", ", columns));
+                return node;
+            }
+
+            _stringBuilder.Append(LastTable);
+            _stringBuilder.Append('.');
             _stringBuilder.Append(node.Name);
             return node;
         }
 
-        #region private methods
-        private static string[] GetColumnsFromProperties(IEnumerable<PropertyInfo> propertyInfos)
+        protected string[] GetColumnsFromProperties(IEnumerable<PropertyInfo> propertyInfos, string? lastTable = null)
         {
-            return propertyInfos.Select(p => "" + (p.GetCustomAttribute<ColumnAttribute>()?.Name ?? p.Name) + " " + p.Name + "")
-                                .ToArray();
+            var prefix = lastTable ?? LastTable;
+
+            return propertyInfos.Select
+                (p => prefix + "." +
+                (p.GetCustomAttribute<ColumnAttribute>()?.Name ?? p.Name))
+                .ToArray();
         }
-        #endregion
 
         #region interface methods
         Expression? IExpressionPrinter.Visit(Expression? expression)
@@ -539,14 +567,47 @@ namespace BigQuery.EntityFrameworkCore
         #endregion
     }
 
-    internal class BigQuerySelectExpressionVisitor : BigQueryExpressionVisitor
+    internal class BigQueryJoinExpressionVisitor : BigQueryExpressionVisitor
     {
-        protected override Expression VisitMember(MemberExpression node)
+        private bool _methodCallVisited;
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            _stringBuilder.Append(node.Member.GetCustomAttribute<ColumnAttribute>()?.Name ?? node.Member.Name);
-            _stringBuilder.AppendWhiteSpace();
-            _stringBuilder.Append(node.Member.Name);
-            return node;
+            _methodCallVisited = true;
+
+            _stringBuilder.Append('(');
+            var result = base.VisitMethodCall(node);
+            _stringBuilder.Append(')');
+            return result;
+        }
+
+        protected override Expression VisitConstant(ConstantExpression node)
+        {
+            return node.Value switch
+            {
+                Table table => VisitConstantTable(table),
+                _ => base.VisitConstant(node),
+            };
+
+            Expression VisitConstantTable(Table table)
+            {
+                Type tableType = node.Type.GenericTypeArguments[0];
+                LastTable = tableType.Name;
+
+                var columns = GetColumnsFromProperties(tableType.GetProperties());
+
+                if (_methodCallVisited)
+                {
+                    _stringBuilder.Append("SELECT ");
+                    _stringBuilder.Append(string.Join(", ", columns));
+                    _stringBuilder.Append(" FROM ");
+                }
+
+                _stringBuilder.Append(string.Format("{0}.{1} AS {2}", table.DatasetName, table.TableName, tableType.Name));
+
+                return node;
+            }
+
         }
     }
 }

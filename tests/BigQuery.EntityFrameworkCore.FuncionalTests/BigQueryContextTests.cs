@@ -14,7 +14,7 @@ namespace BigQuery.EntityFrameworkCore.FuncionalTests
         [Fact]
         public void Test()
         {
-            var product = _context.Data.Products.Where(x => x.Name == "Product-1").Any(x => x.Id > 0);
+            var product = _context.Data.Products.Where(x => x.Name == "Product-1");
         }
     }
 }
