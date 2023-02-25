@@ -1,21 +1,27 @@
 ﻿using Schemas;
 
-namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
+namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
+
+public class DistinctTests
 {
-    public class DistinctTests
+    private readonly BqTestContext _context;
+
+    public DistinctTests(BqTestContext bqTestContext)
     {
-        private readonly BqTestContext _context;
+        _context = bqTestContext;
+    }
 
-        public DistinctTests(BqTestContext bqTestContext)
-        {
-            _context = bqTestContext;
-        }
+    [Fact]
+    public void DataProducts_DistinctToString_ShouldReturnExpected()
+    {
+        var actual = _context.Data.Products.Distinct().ToString();
+        var expected = @"
+    SELECT
+        DISTINCT Product.Id,
+        Product.ProductName 
+    FROM
+        data.Product AS Product";
 
-        [Fact]
-        public void DataProducts_DistinctToString_ShouldReturnExpected()
-        {
-            var query = _context.Data.Products.Distinct().ToString();
-            Assert.Equal("SELECT DISTINCT Product.Id, Product.ProductName FROM data.Product AS Product", query);
-        }
+        Assert.Equal(expected, actual);
     }
 }

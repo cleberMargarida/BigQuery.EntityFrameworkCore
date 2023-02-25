@@ -98,7 +98,7 @@ namespace BigQuery.EntityFrameworkCore
         internal string Print(Expression expression)
         {
             Visit(expression);
-            return _stringBuilder.ToString();
+            return _stringBuilder.ToString().FormatSql();
         }
 
         protected string? LastTable { get; set; }

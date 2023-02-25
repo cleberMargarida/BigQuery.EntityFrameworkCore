@@ -1,4 +1,5 @@
-﻿using Google.Cloud.BigQuery.V2;
+﻿using BigQuery.EntityFrameworkCore.Utils;
+using Google.Cloud.BigQuery.V2;
 using System.Collections;
 using System.Linq.Expressions;
 

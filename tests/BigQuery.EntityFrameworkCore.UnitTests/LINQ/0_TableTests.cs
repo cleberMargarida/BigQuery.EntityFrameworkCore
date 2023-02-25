@@ -1,21 +1,29 @@
-﻿using Schemas;
+﻿using BigQuery.EntityFrameworkCore.Utils;
+using Schemas;
 
-namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
+namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
+
+public class TableTests
 {
-    public class TableTests
+    private readonly BqTestContext _context;
+
+    public TableTests(BqTestContext context)
     {
-        private readonly BqTestContext _context;
+        _context = context;
+    }
 
-        public TableTests(BqTestContext context)
-        {
-            _context = context;
-        }
+    [Fact]
+    public void DataProducts_ToString_ShouldReturnTheExpectedQuery()
+    {
+        var actual = _context.Data.Products.ToString();
+        var expected =
+    @"
+    SELECT
+        Product.Id,
+        Product.ProductName 
+    FROM
+        data.Product AS Product";
 
-        [Fact]
-        public void DataProducts_ToString_ShouldReturnTheExpectedQuery()
-        {
-            var query = _context.Data.Products.ToString();
-            Assert.Equal("SELECT Product.Id, Product.ProductName FROM data.Product AS Product", query);
-        }
+        Assert.Equal(expected, actual);
     }
 }
