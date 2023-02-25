@@ -1,4 +1,4 @@
-﻿EntityFramework Core to BigQuery 
+﻿﻿EntityFramework Core to BigQuery 
 ================
 BigQuery.EntityFrameworkCore is C# Entity Framework Core to provide a high-level abstraction over the database for [Google BigQuery](https://cloud.google.com/bigquery/).
 
@@ -51,7 +51,7 @@ For more information, see [Package Manager Console](/nuget/tools/package-manager
 
 Configuration
 ---
-* Create your **table** abstractions. The class name as the table name, the properties as the columns. Use if you prefer TableAttrite to specify the table name in the bigquery or ColumnAttribute to specify the column name.
+* Create your **table** abstractions. The class name as the table name, the properties as the columns. Use if you prefer TableAttribute to specify the table name in the bigquery or ColumnAttribute to specify the column name.
   ```csharp
   [Table("Product")]
   public class Product
@@ -98,26 +98,106 @@ public YourService(MyBqContext context)
 ```
 
   #### Samples
-```sql
 Enumerator
+```c#
 _context.MyDataset.Products.ToList()
-SELECT Id Id, ProductName Name FROM data.Product AS Product
-
+```
+```sql
+SELECT
+    Product.Id,
+    Product.ProductName 
+FROM
+    data.Product AS Product
+```
 Where
+```c#
 _context.MyDataset.Products.Where(x => x.Id == 1)
-SELECT Id Id, ProductName Name FROM data.Product AS Product WHERE Id = 1
-
+```
+```sql
+SELECT
+    Product.Id,
+    Product.ProductName 
+FROM
+    data.Product AS Product 
+WHERE
+    Product.Id = 1
+```
 Select
+```c#
 _context.MyDataset.Products.Select(x => x.Id)
-SELECT Id Id FROM data.Product AS Product
-
+```
+```sql
+SELECT
+    Product.Id 
+FROM
+    data.Product AS Product
+```
 OrderBy
+```c#
 _context.MyDataset.Products.OrderBy(x => x.Id)
-SELECT Id Id, ProductName Name FROM data.Product AS Product ORDER BY Id
-
+```
+```sql
+SELECT
+    Product.Id,
+    Product.ProductName 
+FROM
+    data.Product AS Product 
+ORDER BY
+    Product.Id
+```
 OrderByDescending
+```c#
 _context.MyDataset.Products.OrderByDescending(x => x.Id)
-SELECT Id Id, ProductName Name FROM data.Product AS Product ORDER BY Id DESC
+```
+```sql
+SELECT
+    Product.Id,
+    Product.ProductName 
+FROM
+    data.Product AS Product 
+ORDER BY
+    Product.Id DESC
+```
+Take and Skip
+```c#
+_context.Data.Products.Take(20).Skip(10)
+```
+```sql
+SELECT
+    Product.Id,
+    Product.ProductName 
+FROM
+    data.Product AS Product LIMIT 20 OFFSET 10
+```
+
+Distinct
+```c#
+_context.Data.Products.Distinct()
+```
+```sql
+SELECT
+    DISTINCT Product.Id,
+    Product.ProductName 
+FROM
+    data.Product AS Product
+```
+Join
+```c#
+_context.Data.Products.Join(_context.Metadata.ProductsMetadata, 
+  x => x.Id, 
+  x => x.Id, 
+  (x, y) => new { x, y })
+```
+```sql
+SELECT
+    Product.Id,
+    Product.ProductName,
+    ProductMetadata.Id 
+FROM
+    data.Product AS Product 
+INNER JOIN
+    Metadata.ProductMetadata AS ProductMetadata 
+        ON Product.Id = ProductMetadata.Id
 ```
 
 And others old good method chain.
