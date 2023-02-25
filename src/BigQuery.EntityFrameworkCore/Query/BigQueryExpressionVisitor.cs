@@ -233,9 +233,8 @@ namespace BigQuery.EntityFrameworkCore
                 case nameof(Enumerable.Min): TranslateMin(node); LastCall = nameof(Enumerable.Min); break;
                 case nameof(Enumerable.Sum): TranslateSum(node); LastCall = nameof(Enumerable.Sum); break;
                 case nameof(Enumerable.Average): TranslateAverage(node); LastCall = nameof(Enumerable.Average); break;
-                case nameof(Enumerable.GroupBy): TranslateGroupBy(node); LastCall = nameof(Enumerable.GroupBy); break;
                 case nameof(Enumerable.Join): TranslateJoin(node); LastCall = nameof(Enumerable.Join); break;
-                default: throw new NotSupportedException(string.Format(ErrorMessages.CallExpressionNotSupported, node.Method.Name));
+                default: throw new NotSupportedException(string.Format(ErrorMessages.CallExpressionNotSupported, node));
             }
 
             return node;
@@ -414,11 +413,6 @@ namespace BigQuery.EntityFrameworkCore
             Visit(node.Arguments[2]);
             _stringBuilder.Append(" = ");
             Visit(node.Arguments[3]);
-        }
-
-        protected void TranslateGroupBy(MethodCallExpression node)
-        {
-            throw new NotImplementedException();
         }
 
         protected override Expression VisitConstant(ConstantExpression node)

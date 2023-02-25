@@ -15,7 +15,7 @@ public class TableTests
     [Fact]
     public void DataProducts_ToString_ShouldReturnTheExpectedQuery()
     {
-        var actual = _context.Data.Products.ToString();
+        var actual = _context.Data.Products.ToQueryString();
         var expected =
     @"
     SELECT

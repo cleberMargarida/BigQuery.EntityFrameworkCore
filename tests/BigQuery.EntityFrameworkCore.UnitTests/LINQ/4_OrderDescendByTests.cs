@@ -1,22 +1,21 @@
 ﻿using Schemas;
 
-namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
+namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
+
+public class OrderByDescendingTests
 {
-    public class OrderByDescendingTests
+    private readonly BqTestContext _context;
+
+    public OrderByDescendingTests(BqTestContext context)
     {
-        private readonly BqTestContext _context;
+        _context = context;
+    }
 
-        public OrderByDescendingTests(BqTestContext context)
-        {
-            _context = context;
-        }
-
-        [Fact]
-        public void DataProducts_OrderByDescendinIdToString_ShouldReturnExpected()
-        {
-            var actual = _context.Data.Products.OrderByDescending(x => x.Id).ToString();
-            var expected =
-@"
+    [Fact]
+    public void DataProducts_OrderByDescendinIdToString_ShouldReturnExpected()
+    {
+        var actual = _context.Data.Products.OrderByDescending(x => x.Id).ToString();
+        var expected = @"
     SELECT
         Product.Id,
         Product.ProductName 
@@ -24,7 +23,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ
         data.Product AS Product 
     ORDER BY
         Product.Id DESC";
-            Assert.Equal(expected, actual);
-        }
+
+        Assert.Equal(expected, actual);
     }
 }

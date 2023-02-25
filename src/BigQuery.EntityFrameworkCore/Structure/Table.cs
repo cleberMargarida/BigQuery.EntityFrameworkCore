@@ -32,7 +32,7 @@ namespace BigQuery.EntityFrameworkCore
         }
 
         string _command;
-        public override string ToString()
+        public string ToQueryString()
         {
             return _command ??= Visitor.Print(Expression.Constant(this));
         }
