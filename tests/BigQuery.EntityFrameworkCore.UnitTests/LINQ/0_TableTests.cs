@@ -1,7 +1,4 @@
-﻿using BigQuery.EntityFrameworkCore.Utils;
-using Schemas;
-
-namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
+﻿namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
 
 public class TableTests
 {

@@ -1,6 +1,4 @@
-﻿using Schemas;
-
-namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
+﻿namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
 
 public class DistinctTests
 {
