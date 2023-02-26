@@ -103,9 +103,9 @@ namespace BigQuery.EntityFrameworkCore
 
         protected string? LastTable { get; set; }
         internal string? LastCall { get; private set; }
-        protected BigQueryExpressionVisitor NewVisitor => new BigQueryExpressionVisitor();
-        protected BigQueryExpressionVisitor NewJoinVisitor => new BigQueryJoinExpressionVisitor();
 
+        protected BigQueryExpressionVisitor GetNewVisitor() => new BigQueryExpressionVisitor();
+        protected BigQueryExpressionVisitor GetNewJoinVisitor() => new BigQueryJoinExpressionVisitor();
 
         [return: NotNullIfNotNull("expression")]
         public override Expression? Visit(Expression? expression)
@@ -243,7 +243,7 @@ namespace BigQuery.EntityFrameworkCore
         protected void TranslateSelect(MethodCallExpression node)
         {
             _stringBuilder.Append("SELECT ");
-            _stringBuilder.Append(NewVisitor.Print(node.Arguments.Last()));
+            _stringBuilder.Append(GetNewVisitor().Print(node.Arguments.Last()));
             Visit(node.Arguments.First());
         }
 
@@ -333,8 +333,11 @@ namespace BigQuery.EntityFrameworkCore
             _stringBuilder.Append(')');
             _stringBuilder.Append(" = COUNT(*)");
             _stringBuilder.Append(" FROM (");
-            _stringBuilder.Append(NewVisitor.Print(node.Arguments.First()));
+            var innerVisitor = GetNewVisitor();
+            _stringBuilder.Append(innerVisitor.Print(node.Arguments.First()));
             _stringBuilder.Append(')');
+            _stringBuilder.Append(" AS ");
+            _stringBuilder.Append(innerVisitor.LastTable);
         }
 
         protected void TranslateAny(MethodCallExpression node)
@@ -344,8 +347,11 @@ namespace BigQuery.EntityFrameworkCore
             _stringBuilder.Append(')');
             _stringBuilder.Append(" > 0");
             _stringBuilder.Append(" FROM (");
-            _stringBuilder.Append(NewVisitor.Print(node.Arguments.First()));
+            var innerVisitor = GetNewVisitor();
+            _stringBuilder.Append(innerVisitor.Print(node.Arguments.First()));
             _stringBuilder.Append(')');
+            _stringBuilder.Append(" AS ");
+            _stringBuilder.Append(innerVisitor.LastTable);
         }
 
         protected void TranslateCount(MethodCallExpression node)
@@ -408,7 +414,7 @@ namespace BigQuery.EntityFrameworkCore
             Visit(node.Arguments[4]);
             Visit(node.Arguments[0]);
             _stringBuilder.Append(" INNER JOIN ");
-            _stringBuilder.Append(NewJoinVisitor.Print(node.Arguments[1]));
+            _stringBuilder.Append(GetNewJoinVisitor().Print(node.Arguments[1]));
             _stringBuilder.Append(" ON ");
             Visit(node.Arguments[2]);
             _stringBuilder.Append(" = ");

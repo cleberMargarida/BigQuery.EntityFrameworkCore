@@ -153,7 +153,7 @@ public class ExecutableTests
             Product.Id,
             Product.ProductName       
         FROM
-            data.Product AS Product)";
+            data.Product AS Product) AS Product";
 
         _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
         _context.Data.Products.All(x => x.Id > 999);
@@ -173,7 +173,7 @@ public class ExecutableTests
             Product.Id,
             Product.ProductName       
         FROM
-            data.Product AS Product)";
+            data.Product AS Product) AS Product";
 
         _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
         _context.Data.Products.Any(x => x.Id > 999);
