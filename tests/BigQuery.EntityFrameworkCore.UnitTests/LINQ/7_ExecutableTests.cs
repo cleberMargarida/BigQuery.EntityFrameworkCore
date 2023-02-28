@@ -100,10 +100,10 @@ public class ExecutableTests
     FROM
         data.Product AS Product 
     WHERE
-        Id = (
+        Product.Id = (
             
             SELECT
-                MAX(Id) 
+                MAX(Product.Id) 
             FROM
                 data.Product AS Product
         )";
@@ -124,10 +124,10 @@ public class ExecutableTests
     FROM
         data.Product AS Product 
     WHERE
-        Id = (
+        Product.Id = (
             
             SELECT
-                MAX(Id) 
+                MAX(Product.Id) 
             FROM
                 data.Product AS Product
         )";

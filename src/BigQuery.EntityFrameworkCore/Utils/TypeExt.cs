@@ -1,4 +1,5 @@
-﻿using BigQuery.EntityFrameworkCore.Utils;
+﻿using BigQuery.EntityFrameworkCore;
+using BigQuery.EntityFrameworkCore.Utils;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -9,6 +10,11 @@ namespace System.Reflection
     {
         public static string KeyColumn(this Type type)
         {
+            if (typeof(Table).IsAssignableFrom(type))
+            {
+                type = type.GetGenericArguments()[0];
+            }
+
             var properties = type
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .ToDictionary(x => x.Name);

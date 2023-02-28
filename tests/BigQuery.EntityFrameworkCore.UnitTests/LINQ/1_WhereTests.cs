@@ -234,10 +234,10 @@ public class WhereTests
         data.Product AS Product 
     WHERE
         Product.Id = 1 
-        AND Id = (
+        AND Product.Id = (
             
             SELECT
-                MAX(Id) 
+                MAX(Product.Id) 
             FROM
                 data.Product AS Product 
             WHERE
@@ -261,10 +261,10 @@ public class WhereTests
         data.Product AS Product 
     WHERE
         Product.Id = 1 
-        AND Id = (
+        AND Product.Id = (
             
             SELECT
-                MAX(Id) 
+                MAX(Product.Id) 
             FROM
                 data.Product AS Product 
             WHERE

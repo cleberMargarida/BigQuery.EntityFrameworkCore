@@ -310,31 +310,56 @@ namespace BigQuery.EntityFrameworkCore
             Visit(node.Arguments.First());
 
             if (LastCall is nameof(Enumerable.Where))
+            {
                 _stringBuilder.Append(" AND ");
+            }
             else
+            {
                 _stringBuilder.Append(" WHERE ");
+            }
 
-            string primaryKey = node.Type.KeyColumn();
+            Expression? nextNode;
+            string? primaryKey = null;
 
+            if (node.Arguments.First().IsSelectable())
+            {
+                nextNode = node.Arguments
+                            .First()
+                            .Cast<MethodCallExpression>().Arguments
+                            .First();
+
+                primaryKey = nextNode.Type.KeyColumn();
+
+            }
+            else
+            {
+                nextNode = node.Arguments.First();
+                primaryKey = node.Type.KeyColumn();
+            }
+
+            _stringBuilder.Append(LastTable + ".");
             _stringBuilder.Append(primaryKey);
             _stringBuilder.Append(" = ");
             _stringBuilder.Append('(');
             _stringBuilder.Append("SELECT MAX(");
+            _stringBuilder.Append(LastTable + ".");
             _stringBuilder.Append(primaryKey);
             _stringBuilder.Append(')');
-            Visit(node.Arguments.First());
+            Visit(nextNode);
             _stringBuilder.Append(')');
         }
 
         protected void TranslateAll(MethodCallExpression node)
         {
+            var innerVisitor = GetNewVisitor();
+            string subselect = innerVisitor.Print(node.Arguments.First());
+
             _stringBuilder.Append("SELECT COUNTIF (");
             Visit(node.Arguments.Last());
             _stringBuilder.Append(')');
             _stringBuilder.Append(" = COUNT(*)");
             _stringBuilder.Append(" FROM (");
-            var innerVisitor = GetNewVisitor();
-            _stringBuilder.Append(innerVisitor.Print(node.Arguments.First()));
+            _stringBuilder.Append(subselect);
             _stringBuilder.Append(')');
             _stringBuilder.Append(" AS ");
             _stringBuilder.Append(innerVisitor.LastTable);
@@ -357,6 +382,16 @@ namespace BigQuery.EntityFrameworkCore
         protected void TranslateCount(MethodCallExpression node)
         {
             _stringBuilder.Append("SELECT COUNT(*)");
+
+            if (node.Arguments.First() is MethodCallExpression me &&
+                me.Method.Name is nameof(Enumerable.Select) &&
+                me.Arguments.First() is ConstantExpression ce &&
+                ce.Value is Table table)
+            {
+                Visit(ce);
+                return;
+            }
+
             Visit(node.Arguments.First());
         }
 
@@ -529,17 +564,21 @@ namespace BigQuery.EntityFrameworkCore
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            var parameterIsRoot = LastTable is null;
+            var columns = GetColumnsFromProperties(node.Type.GetProperties(), node.Type.Name);
+            var parameterIsRoot = LastTable is null && columns.Any();
 
             if (parameterIsRoot)
             {
-                var columns = GetColumnsFromProperties(node.Type.GetProperties(), node.Type.Name);
                 _stringBuilder.Append(string.Join(", ", columns));
                 return node;
             }
 
-            _stringBuilder.Append(LastTable);
-            _stringBuilder.Append('.');
+            if (LastTable is not null)
+            {
+                _stringBuilder.Append(LastTable);
+                _stringBuilder.Append('.');
+            }
+
             _stringBuilder.Append(node.Name);
             return node;
         }
