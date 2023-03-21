@@ -43,7 +43,7 @@ public class SelectTests
     [Fact]
     public void DataProducts_SelectIdWhereIdToString_ShouldReturnExpected()
     {
-        var actual = _context.Data.Products.Select(x => x.Id).Where(Id => Id == 1).ToString();
+        var actual = _context.Data.Products.Select(x => x.Id).Where(x => x == 1).ToString();
         string expected = 
     @"
     SELECT

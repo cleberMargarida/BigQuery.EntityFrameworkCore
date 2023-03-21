@@ -5,11 +5,15 @@ namespace System.Linq
 {
     internal static class LinqExt
     {
-        public static bool IsSelectable(this Expression expression) => expression switch
+        public static T LastButOne<T>(this IEnumerable<T> source)
         {
-            MethodCallExpression m when m.Method.Name is nameof(Enumerable.Select) or nameof(Enumerable.Join) => true,
-            _ => false
-        };
+            return source.Reverse().Skip(1).First(); 
+        }
+        
+        public static T LastButOneOrDefault<T>(this IEnumerable<T> source)
+        {
+            return source.Reverse().Skip(1).FirstOrDefault(); 
+        }
 
         public static TExpression Cast<TExpression>(this Expression expression) where TExpression : Expression
         {

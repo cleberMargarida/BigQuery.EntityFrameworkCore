@@ -105,7 +105,6 @@ namespace BigQuery.EntityFrameworkCore
         internal string? LastCall { get; private set; }
 
         protected BigQueryExpressionVisitor GetNewVisitor() => new BigQueryExpressionVisitor();
-        protected BigQueryExpressionVisitor GetNewJoinVisitor() => new BigQueryJoinExpressionVisitor();
 
         [return: NotNullIfNotNull("expression")]
         public override Expression? Visit(Expression? expression)
@@ -209,305 +208,173 @@ namespace BigQuery.EntityFrameworkCore
 
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
+            if (node.GetCallChainMethodsName().LastButOne() is nameof(Queryable.Select))
+            {
+                node = ExpressionUnraveler.Rewrite(node);
+            }
+
             switch (node.Method.Name)
             {
-                case nameof(Enumerable.Select): TranslateSelect(node); LastCall = nameof(Enumerable.Select); break;
-                case nameof(Enumerable.Where): TranslateWhere(node); LastCall = nameof(Enumerable.Where); break;
-                case nameof(Enumerable.OrderBy): TranslateOrderBy(node); LastCall = nameof(Enumerable.OrderBy); break;
-                case nameof(Enumerable.OrderByDescending): TranslateOrderByDescending(node); LastCall = nameof(Enumerable.OrderByDescending); break;
-                case nameof(Enumerable.ThenBy): TranslateThenBy(node); LastCall = nameof(Enumerable.ThenBy); break;
-                case nameof(Enumerable.ThenByDescending): TranslateThenByDescending(node); LastCall = nameof(Enumerable.ThenByDescending); break;
-                case nameof(Enumerable.Take): TranslateTake(node); LastCall = nameof(Enumerable.Take); break;
-                case nameof(Enumerable.Skip): TranslateSkip(node); LastCall = nameof(Enumerable.Skip); break;
-                case nameof(Enumerable.First): TranslateFirst(node); LastCall = nameof(Enumerable.First); break;
-                case nameof(Enumerable.FirstOrDefault): TranslateFirst(node); LastCall = nameof(Enumerable.FirstOrDefault); break;
-                case nameof(Enumerable.Single): TranslateFirst(node); LastCall = nameof(Enumerable.Single); break;
-                case nameof(Enumerable.SingleOrDefault): TranslateFirst(node); LastCall = nameof(Enumerable.SingleOrDefault); break;
-                case nameof(Enumerable.Last): TranslateLast(node); LastCall = nameof(Enumerable.Last); break;
-                case nameof(Enumerable.LastOrDefault): TranslateLast(node); LastCall = nameof(Enumerable.LastOrDefault); break;
-                case nameof(Enumerable.All): TranslateAll(node); LastCall = nameof(Enumerable.All); break;
-                case nameof(Enumerable.Any): TranslateAny(node); LastCall = nameof(Enumerable.Any); break;
-                case nameof(Enumerable.Count): TranslateCount(node); LastCall = nameof(Enumerable.Count); break;
-                case nameof(Enumerable.Distinct): TranslateDistinct(node); LastCall = nameof(Enumerable.Distinct); break;
-                case nameof(Enumerable.Max): TranslateMax(node); LastCall = nameof(Enumerable.Max); break;
-                case nameof(Enumerable.Min): TranslateMin(node); LastCall = nameof(Enumerable.Min); break;
-                case nameof(Enumerable.Sum): TranslateSum(node); LastCall = nameof(Enumerable.Sum); break;
-                case nameof(Enumerable.Average): TranslateAverage(node); LastCall = nameof(Enumerable.Average); break;
-                case nameof(Enumerable.Join): TranslateJoin(node); LastCall = nameof(Enumerable.Join); break;
+                case nameof(Enumerable.Select): VisitSelect(node); LastCall = nameof(Enumerable.Select); break;
+                case nameof(Enumerable.Where): VisitWhere(node); LastCall = nameof(Enumerable.Where); break;
+                case nameof(Enumerable.OrderBy): VisitOrderBy(node); LastCall = nameof(Enumerable.OrderBy); break;
+                case nameof(Enumerable.OrderByDescending): VisitOrderByDescending(node); LastCall = nameof(Enumerable.OrderByDescending); break;
+                case nameof(Enumerable.ThenBy): VisitThenBy(node); LastCall = nameof(Enumerable.ThenBy); break;
+                case nameof(Enumerable.ThenByDescending): VisitThenByDescending(node); LastCall = nameof(Enumerable.ThenByDescending); break;
+                case nameof(Enumerable.Take): VisitTake(node); LastCall = nameof(Enumerable.Take); break;
+                case nameof(Enumerable.Skip): VisitSkip(node); LastCall = nameof(Enumerable.Skip); break;
+                case nameof(Enumerable.First): VisitFirst(node); LastCall = nameof(Enumerable.First); break;
+                case nameof(Enumerable.FirstOrDefault): VisitFirst(node); LastCall = nameof(Enumerable.FirstOrDefault); break;
+                case nameof(Enumerable.Single): VisitFirst(node); LastCall = nameof(Enumerable.Single); break;
+                case nameof(Enumerable.SingleOrDefault): VisitFirst(node); LastCall = nameof(Enumerable.SingleOrDefault); break;
+                case nameof(Enumerable.Last): VisitLast(node); LastCall = nameof(Enumerable.Last); break;
+                case nameof(Enumerable.LastOrDefault): VisitLast(node); LastCall = nameof(Enumerable.LastOrDefault); break;
+                case nameof(Enumerable.All): VisitAll(node); LastCall = nameof(Enumerable.All); break;
+                case nameof(Enumerable.Any): VisitAny(node); LastCall = nameof(Enumerable.Any); break;
+                case nameof(Enumerable.Count): VisitCount(node); LastCall = nameof(Enumerable.Count); break;
+                case nameof(Enumerable.Distinct): VisitDistinct(node); LastCall = nameof(Enumerable.Distinct); break;
+                case nameof(Enumerable.Max): VisitMax(node); LastCall = nameof(Enumerable.Max); break;
+                case nameof(Enumerable.Min): VisitMin(node); LastCall = nameof(Enumerable.Min); break;
+                case nameof(Enumerable.Sum): VisitSum(node); LastCall = nameof(Enumerable.Sum); break;
+                case nameof(Enumerable.Average): VisitAverage(node); LastCall = nameof(Enumerable.Average); break;
+                case nameof(Enumerable.Join): VisitJoin(node); LastCall = nameof(Enumerable.Join); break;
                 default: throw new NotSupportedException(string.Format(ErrorMessages.CallExpressionNotSupported, node));
             }
 
             return node;
         }
 
-        protected void TranslateSelect(MethodCallExpression node)
+        protected Expression VisitSelect(MethodCallExpression node)
         {
-            _stringBuilder.Append("SELECT ");
-            _stringBuilder.Append(GetNewVisitor().Print(node.Arguments.Last()));
-            Visit(node.Arguments.First());
+            return node;
         }
 
-        protected void TranslateWhere(MethodCallExpression node)
+        protected Expression VisitWhere(MethodCallExpression node)
         {
-            Visit(node.Arguments.First());
-            _stringBuilder.Append(" WHERE ");
-            Visit(node.Arguments.Last());
+            return node;
         }
 
-        protected void TranslateOrderBy(MethodCallExpression node)
+        protected Expression VisitOrderBy(MethodCallExpression node)
         {
-            Visit(node.Arguments.First());
-            _stringBuilder.Append(" ORDER BY ");
-            Visit(node.Arguments.Last());
+            return node;
         }
 
-        protected void TranslateOrderByDescending(MethodCallExpression node)
+        protected Expression VisitOrderByDescending(MethodCallExpression node)
         {
-            TranslateOrderBy(node);
-            _stringBuilder.Append(" DESC");
+            return node;
         }
 
-        protected void TranslateThenBy(MethodCallExpression node)
+        protected Expression VisitThenBy(MethodCallExpression node)
         {
-            TranslateOrderBy(node);
-            _stringBuilder.Append(" DESC");
+            return node;
         }
 
-        protected void TranslateThenByDescending(MethodCallExpression node)
+        protected Expression VisitThenByDescending(MethodCallExpression node)
         {
-            TranslateOrderBy(node);
-            _stringBuilder.Append(" DESC");
+            return node;
         }
 
-        protected void TranslateTake(MethodCallExpression node)
+        protected Expression VisitTake(MethodCallExpression node)
         {
-            Visit(node.Arguments.First());
-            _stringBuilder.Append(" LIMIT ");
-            Visit(node.Arguments.Last());
+            return node;
         }
 
-        protected void TranslateSkip(MethodCallExpression node)
+        protected Expression VisitSkip(MethodCallExpression node)
         {
-            if (node.Arguments.First() is not MethodCallExpression argument ||
-                argument.Method.Name is not nameof(Enumerable.Take))
-            {
-                throw new InvalidOperationException(ErrorMessages.OffsetClauseWithoutLimitErrorMessage);
-            }
-
-            TranslateTake(argument);
-            _stringBuilder.Append(" OFFSET ");
-            Visit(node.Arguments.Last());
+            return node;
         }
 
-        protected void TranslateFirst(MethodCallExpression node)
+        protected Expression VisitFirst(MethodCallExpression node)
         {
-            Visit(node.Arguments.First());
-            _stringBuilder.Append(" LIMIT 1");
+            return node;
         }
 
-        protected void TranslateLast(MethodCallExpression node)
+        protected Expression VisitLast(MethodCallExpression node)
         {
-            Visit(node.Arguments.First());
-
-            if (LastCall is nameof(Enumerable.Where))
-            {
-                _stringBuilder.Append(" AND ");
-            }
-            else
-            {
-                _stringBuilder.Append(" WHERE ");
-            }
-
-            Expression? nextNode;
-            string? primaryKey = null;
-
-            if (node.Arguments.First().IsSelectable())
-            {
-                nextNode = node.Arguments
-                            .First()
-                            .Cast<MethodCallExpression>().Arguments
-                            .First();
-
-                primaryKey = nextNode.Type.KeyColumn();
-
-            }
-            else
-            {
-                nextNode = node.Arguments.First();
-                primaryKey = node.Type.KeyColumn();
-            }
-
-            _stringBuilder.Append(LastTable + ".");
-            _stringBuilder.Append(primaryKey);
-            _stringBuilder.Append(" = ");
-            _stringBuilder.Append('(');
-            _stringBuilder.Append("SELECT MAX(");
-            _stringBuilder.Append(LastTable + ".");
-            _stringBuilder.Append(primaryKey);
-            _stringBuilder.Append(')');
-            Visit(nextNode);
-            _stringBuilder.Append(')');
+            return node;
         }
 
-        protected void TranslateAll(MethodCallExpression node)
+        protected Expression VisitAll(MethodCallExpression node)
         {
-            var innerVisitor = GetNewVisitor();
-            string subselect = innerVisitor.Print(node.Arguments.First());
-
-            _stringBuilder.Append("SELECT COUNTIF (");
-            Visit(node.Arguments.Last());
-            _stringBuilder.Append(')');
-            _stringBuilder.Append(" = COUNT(*)");
-            _stringBuilder.Append(" FROM (");
-            _stringBuilder.Append(subselect);
-            _stringBuilder.Append(')');
-            _stringBuilder.Append(" AS ");
-            _stringBuilder.Append(innerVisitor.LastTable);
+            return node;
         }
 
-        protected void TranslateAny(MethodCallExpression node)
+        protected Expression VisitAny(MethodCallExpression node)
         {
-            _stringBuilder.Append("SELECT COUNTIF (");
-            Visit(node.Arguments.Last());
-            _stringBuilder.Append(')');
-            _stringBuilder.Append(" > 0");
-            _stringBuilder.Append(" FROM (");
-            var innerVisitor = GetNewVisitor();
-            _stringBuilder.Append(innerVisitor.Print(node.Arguments.First()));
-            _stringBuilder.Append(')');
-            _stringBuilder.Append(" AS ");
-            _stringBuilder.Append(innerVisitor.LastTable);
+            return node;
         }
 
-        protected void TranslateCount(MethodCallExpression node)
+        protected Expression VisitCount(MethodCallExpression node)
         {
-            _stringBuilder.Append("SELECT COUNT(*)");
-
-            if (node.Arguments.First() is MethodCallExpression me &&
-                me.Method.Name is nameof(Enumerable.Select) &&
-                me.Arguments.First() is ConstantExpression ce &&
-                ce.Value is Table table)
-            {
-                Visit(ce);
-                return;
-            }
-
-            Visit(node.Arguments.First());
+            return node;
         }
 
-        protected void TranslateDistinct(MethodCallExpression node)
+        protected Expression VisitDistinct(MethodCallExpression node)
         {
-            if (_stringBuilder.Length is not 0)
-            {
-                return;
-            }
-
-            LastTable = node.Type.GenericTypeArguments[0].Name;
-
-            _stringBuilder.Append("SELECT DISTINCT ");
-            var columns = GetColumnsFromProperties(node.Type.GenericTypeArguments[0].GetProperties());
-            _stringBuilder.Append(string.Join(", ", columns));
-
-            Visit(node.Arguments.First());
+            return node;
         }
 
-        protected void TranslateMin(MethodCallExpression node)
+        protected Expression VisitMin(MethodCallExpression node)
         {
-            _stringBuilder.Append("SELECT MIN(");
-            Visit(node.Arguments.Last());
-            _stringBuilder.Append(')');
-            Visit(node.Arguments.First());
+            return node;
         }
 
-        protected void TranslateMax(MethodCallExpression node)
+        protected Expression VisitMax(MethodCallExpression node)
         {
-            _stringBuilder.Append("SELECT MAX(");
-            Visit(node.Arguments.Last());
-            _stringBuilder.Append(')');
-            Visit(node.Arguments.First());
+            return node;
         }
 
-        protected void TranslateSum(MethodCallExpression node)
+        protected Expression VisitSum(MethodCallExpression node)
         {
-            _stringBuilder.Append("SELECT SUM(");
-            Visit(node.Arguments.Last());
-            _stringBuilder.Append(')');
-            Visit(node.Arguments.First());
+            return node;
         }
 
-        protected void TranslateAverage(MethodCallExpression node)
+        protected Expression VisitAverage(MethodCallExpression node)
         {
-            _stringBuilder.Append("SELECT AVG(");
-            Visit(node.Arguments.Last());
-            _stringBuilder.Append(')');
-            Visit(node.Arguments.First());
+            return node;
         }
 
-        protected void TranslateJoin(MethodCallExpression node)
+        protected Expression VisitJoin(MethodCallExpression node)
         {
-            _stringBuilder.Append("SELECT ");
-            Visit(node.Arguments[4]);
-            Visit(node.Arguments[0]);
-            _stringBuilder.Append(" INNER JOIN ");
-            _stringBuilder.Append(GetNewJoinVisitor().Print(node.Arguments[1]));
-            _stringBuilder.Append(" ON ");
-            Visit(node.Arguments[2]);
-            _stringBuilder.Append(" = ");
-            Visit(node.Arguments[3]);
+            return node;
         }
 
-        protected override Expression VisitConstant(ConstantExpression node)
+        protected override Expression VisitConstant(ConstantExpression node) => node.Value switch
         {
-            return node.Value switch
-            {
-                Table table => VisitConstantTable(table),
-                String str => VisitConstantString(str),
-                DateTime dateTime => VisitConstantDateTime(dateTime),
-                TimeSpan timeSpan => VisitConstantTimeSpan(timeSpan),
-                _ => VisitConstantDefault()
-            };
+            Table table => VisitConstantTable(table, node),
+            String str => VisitConstantString(str, node),
+            DateTime dateTime => VisitConstantDateTime(dateTime, node),
+            TimeSpan timeSpan => VisitConstantTimeSpan(timeSpan, node),
+            _ => VisitConstantDefault(node)
+        };
 
-            Expression VisitConstantTable(Table table)
-            {
-                Type tableType = node.Type.GenericTypeArguments[0];
-                LastTable = tableType.Name;
+        protected Expression VisitConstantDefault(ConstantExpression node)
+        {
+            _stringBuilder.Append(node.Value);
+            return node;
+        }
 
-                if (_stringBuilder.Length is 0)
-                {
-                    _stringBuilder.Append("SELECT ");
+        protected Expression VisitConstantTimeSpan(TimeSpan timeSpan, ConstantExpression node)
+        {
+            _stringBuilder.Append(timeSpan.ToString(Formats.TimeOnlyFormat));
+            return node;
+        }
 
-                    var columns = GetColumnsFromProperties(tableType.GetProperties());
+        protected Expression VisitConstantDateTime(DateTime dateTime, ConstantExpression node)
+        {
+            _stringBuilder.Append(dateTime.ToString(Formats.DefaultDateTimeFormat));
+            return node;
+        }
 
-                    _stringBuilder.Append(string.Join(", ", columns));
-                    _stringBuilder.Append(string.Format(" FROM " + "{0}.{1} AS {2}", table.DatasetName, table.TableName, tableType.Name));
-                }
-                else
-                {
-                    _stringBuilder.Append(string.Format(" FROM " + "{0}.{1} AS {2}", table.DatasetName, table.TableName, tableType.Name));
-                }
+        protected Expression VisitConstantString(string str, ConstantExpression node)
+        {
+            _stringBuilder.AppendWithQuotationAround(str);
+            return node;
+        }
 
-                return node;
-            }
-            Expression VisitConstantString(string str)
-            {
-                _stringBuilder.AppendWithQuotationAround(str);
-                return node;
-            }
-            Expression VisitConstantDateTime(DateTime dateTime)
-            {
-                _stringBuilder.Append(dateTime.ToString(Formats.DefaultDateTimeFormat));
-                return node;
-            }
-            Expression VisitConstantTimeSpan(TimeSpan timeSpan)
-            {
-                _stringBuilder.Append(timeSpan.ToString(Formats.TimeOnlyFormat));
-                return node;
-            }
-            Expression VisitConstantDefault()
-            {
-                _stringBuilder.Append(node.Value);
-                return node;
-            }
+        protected Expression VisitConstantTable(Table table, ConstantExpression node)
+        {
+            return node;
         }
 
         protected override Expression VisitUnary(UnaryExpression node)
@@ -564,22 +431,6 @@ namespace BigQuery.EntityFrameworkCore
 
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            var columns = GetColumnsFromProperties(node.Type.GetProperties(), node.Type.Name);
-            var parameterIsRoot = LastTable is null && columns.Any();
-
-            if (parameterIsRoot)
-            {
-                _stringBuilder.Append(string.Join(", ", columns));
-                return node;
-            }
-
-            if (LastTable is not null)
-            {
-                _stringBuilder.Append(LastTable);
-                _stringBuilder.Append('.');
-            }
-
-            _stringBuilder.Append(node.Name);
             return node;
         }
 
@@ -604,49 +455,5 @@ namespace BigQuery.EntityFrameworkCore
             return this.Print(expression);
         }
         #endregion
-    }
-
-    internal class BigQueryJoinExpressionVisitor : BigQueryExpressionVisitor
-    {
-        private bool _methodCallVisited;
-
-        protected override Expression VisitMethodCall(MethodCallExpression node)
-        {
-            _methodCallVisited = true;
-
-            _stringBuilder.Append('(');
-            var result = base.VisitMethodCall(node);
-            _stringBuilder.Append(')');
-            return result;
-        }
-
-        protected override Expression VisitConstant(ConstantExpression node)
-        {
-            return node.Value switch
-            {
-                Table table => VisitConstantTable(table),
-                _ => base.VisitConstant(node),
-            };
-
-            Expression VisitConstantTable(Table table)
-            {
-                Type tableType = node.Type.GenericTypeArguments[0];
-                LastTable = tableType.Name;
-
-                var columns = GetColumnsFromProperties(tableType.GetProperties());
-
-                if (_methodCallVisited)
-                {
-                    _stringBuilder.Append("SELECT ");
-                    _stringBuilder.Append(string.Join(", ", columns));
-                    _stringBuilder.Append(" FROM ");
-                }
-
-                _stringBuilder.Append(string.Format("{0}.{1} AS {2}", table.DatasetName, table.TableName, tableType.Name));
-
-                return node;
-            }
-
-        }
     }
 }
