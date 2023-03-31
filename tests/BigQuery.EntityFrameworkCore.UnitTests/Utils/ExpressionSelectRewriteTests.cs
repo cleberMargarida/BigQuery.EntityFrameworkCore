@@ -2,9 +2,9 @@
 
 namespace BigQuery.EntityFrameworkCore.UnitTests.Utils
 {
-    using static SelectParameterCleaner;
+    using static ExpressionSelectRewrite;
 
-    public class SelectParameterCleanerTests
+    public class ExpressionSelectRewriteTests
     {
         [Fact]
         public void RewriteSelect_SelectWhere_ShouldSwap()
@@ -31,7 +31,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.Utils
         public void RewriteSelect_SelectCount_ShouldSwap()
         {
             Expression<Func<Table<Product>, int>> expression = xs => xs.Select(x => x.Id).Count(x => x == 1);
-            Expression<Func<Table<Product>, int>> expected = xs => xs.Where(x => x.Id == 1).Select(x => x.Id).Count();
+            Expression<Func<Table<Product>, int>> expected = xs => xs.Count(x => x.Id == 1);
             var actual = Rewrite(expression);
             Assert.Equivalent(expected, actual);
         }
@@ -49,7 +49,7 @@ namespace BigQuery.EntityFrameworkCore.UnitTests.Utils
         public void RewriteSelect_SelectLongCount_ShouldSwap()
         {
             Expression<Func<Table<Product>, long>> expression = xs => xs.Select(x => x.Id).LongCount(x => x == 1);
-            Expression<Func<Table<Product>, long>> expected = xs => xs.Where(x => x.Id == 1).Select(x => x.Id).LongCount();
+            Expression<Func<Table<Product>, long>> expected = xs => xs.LongCount(x => x.Id == 1);
             var actual = Rewrite(expression);
             Assert.Equivalent(expected, actual);
         }

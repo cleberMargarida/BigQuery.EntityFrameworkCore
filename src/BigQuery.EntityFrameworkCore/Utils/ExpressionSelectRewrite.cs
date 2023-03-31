@@ -1,9 +1,8 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace BigQuery.EntityFrameworkCore.Utils
 {
-    internal class SelectParameterCleaner : ExpressionVisitor
+    internal class ExpressionSelectRewrite : ExpressionVisitor
     {
         private readonly Expression _root;
 
@@ -11,14 +10,14 @@ namespace BigQuery.EntityFrameworkCore.Utils
         private Expression? _result;
         private Expression? _member;
 
-        public SelectParameterCleaner(Expression root)
+        public ExpressionSelectRewrite(Expression root)
         {
             _root = root;
         }
 
         internal static LambdaExpression Rewrite(LambdaExpression node)
         {
-            var instance = new SelectParameterCleaner(node);
+            var instance = new ExpressionSelectRewrite(node);
             instance.Visit(node);
 
             return (instance._result ?? instance._root).Cast<LambdaExpression>();
@@ -26,7 +25,7 @@ namespace BigQuery.EntityFrameworkCore.Utils
 
         internal static MethodCallExpression Rewrite(MethodCallExpression node)
         {
-            var instance = new SelectParameterCleaner(node);
+            var instance = new ExpressionSelectRewrite(node);
             instance.Visit(node);
 
             return (instance._result ?? instance._root).Cast<MethodCallExpression>();
@@ -54,16 +53,17 @@ namespace BigQuery.EntityFrameworkCore.Utils
 
             var seletor = node.Arguments.Last();
 
-            var seletorOperand = seletor
-                .Cast<UnaryExpression>().Operand
-                .Cast<LambdaExpression>();
+            var seletorOperand = seletor.Find<LambdaExpression>(o => o.StopOnFirst)!;
 
             var predicate = BuildPredicate(
                 node,
                 seletorOperand
             );
 
-            bool isQueryableMethod = (_lastCall.Method.DeclaringType?.Equals(typeof(Queryable))).GetValueOrDefault();
+            var isQueryableMethod = _lastCall
+                .Method
+                .DeclaringType?
+                .Equals(typeof(Queryable)) ?? false;
 
             if (!isQueryableMethod)
             {
@@ -74,8 +74,6 @@ namespace BigQuery.EntityFrameworkCore.Utils
             {
                 case nameof(Queryable.Where):
                     SetResultWhere(node, argument, seletor, predicate); break;
-                case nameof(Queryable.Count):
-                case nameof(Queryable.LongCount):
                 case nameof(Queryable.Last):
                 case nameof(Queryable.LastOrDefault):
                 case nameof(Queryable.First):
@@ -83,6 +81,8 @@ namespace BigQuery.EntityFrameworkCore.Utils
                 case nameof(Queryable.Single):
                 case nameof(Queryable.SingleOrDefault):
                     SetResultNoPredicated(node, argument, seletor, seletorOperand, predicate); break;
+                case nameof(Queryable.LongCount):
+                case nameof(Queryable.Count):
                 case nameof(Queryable.Any):
                 case nameof(Queryable.All):
                 case nameof(Queryable.Max):
@@ -226,17 +226,7 @@ namespace BigQuery.EntityFrameworkCore.Utils
 
             UnaryExpression BuildPredicate(MethodCallExpression node, LambdaExpression seletorOperand)
             {
-                _member = node.Arguments.Last()
-                    .Cast<UnaryExpression>().Operand
-                    .Cast<LambdaExpression>().Body;
-
-                var predicateBody = Visit(
-                    _lastCall?.Arguments.Last()
-                    .Cast<UnaryExpression>().Operand
-                    .Cast<LambdaExpression>().Body
-                );
-
-                _member = null;
+                var predicateBody = ChangeParameter(node);
 
                 var predicate = Expression.Quote(Expression.Lambda(
                     predicateBody,
@@ -258,6 +248,28 @@ namespace BigQuery.EntityFrameworkCore.Utils
                 }
 
                 return genericArguments;
+            }
+
+            Expression ChangeParameter(MethodCallExpression node)
+            {
+                ///This will be used to override the original parameter in VisitParameter.
+                _member = node.Arguments
+                    .Last()
+                    .Find<LambdaExpression>(o => o.StopOnFirst)!
+                    .Body;
+
+                ///Get predicate with changed parameter.
+                var predicateBody = Visit(
+                    _lastCall?.Arguments
+                    .Last()
+                    .Find<LambdaExpression>(o => o.StopOnFirst)!
+                    .Body
+                );
+
+                ///Redefine after override the parameter.
+                _member = null;
+
+                return predicateBody;
             }
         }
 

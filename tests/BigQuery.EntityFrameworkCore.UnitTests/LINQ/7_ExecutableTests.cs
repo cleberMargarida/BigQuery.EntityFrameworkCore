@@ -1,6 +1,6 @@
 ﻿namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
 
-public class ExecutableTests
+public class ExecutableTests : IDisposable
 {
     private readonly BqTestContext _context;
     private readonly Mock<IExecuteQuery> _mock;
@@ -23,7 +23,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
         _context.Data.Products.Count();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -39,7 +38,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<Product>(expected)).Returns(new Product()).Verifiable();
         _context.Data.Products.First();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -55,7 +53,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<Product>(expected)).Verifiable();
         _context.Data.Products.FirstOrDefault();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -71,7 +68,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<Product>(expected)).Returns(new Product()).Verifiable();
         _context.Data.Products.Single();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -87,7 +83,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<Product>(expected)).Verifiable();
         _context.Data.Products.SingleOrDefault();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -111,7 +106,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<Product>(expected)).Returns(new Product()).Verifiable();
         _context.Data.Products.Last();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -135,7 +129,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<Product>(expected)).Verifiable();
         _context.Data.Products.LastOrDefault();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -145,17 +138,11 @@ public class ExecutableTests
     SELECT
         COUNTIF (Product.Id > 999) = COUNT(*) 
     FROM
-        (      
-        SELECT
-            Product.Id,
-            Product.ProductName       
-        FROM
-            data.Product AS Product) AS Product";
+        data.Product AS Product";
 
         _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
         _context.Data.Products.All(x => x.Id > 999);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -165,17 +152,11 @@ public class ExecutableTests
     SELECT
         COUNTIF (Product.Id > 999) > 0 
     FROM
-        (      
-        SELECT
-            Product.Id,
-            Product.ProductName       
-        FROM
-            data.Product AS Product) AS Product";
+        data.Product AS Product";
 
         _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
         _context.Data.Products.Any(x => x.Id > 999);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -190,7 +171,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
         _context.Data.Products.Max(x => x.Id);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -205,7 +185,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
         _context.Data.Products.Min(x => x.Id);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -220,7 +199,6 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
         _context.Data.Products.Sum(x => x.Id);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -235,6 +213,10 @@ public class ExecutableTests
         _mock.Setup(x => x.GetResult<double>(expected)).Verifiable();
         _context.Data.Products.Average(x => x.Id);
         _mock.Verify();
+    }
+
+    public void Dispose()
+    {
         _mock.Reset();
     }
 }

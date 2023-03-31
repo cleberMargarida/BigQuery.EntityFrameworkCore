@@ -6,7 +6,7 @@ namespace BigQuery.EntityFrameworkCore
 {
     internal abstract class BigQueryExpressionVisitorBase : ExpressionVisitor
     {
-        private static readonly string[] CaseSelectParameterCleaner = new string[17]
+        private static readonly string[] CaseSelectParameterCleaner = new string[19]
         {
              nameof(Queryable.Where),
              nameof(Queryable.Count),
@@ -21,6 +21,8 @@ namespace BigQuery.EntityFrameworkCore
              nameof(Queryable.Max),
              nameof(Queryable.Min),
              nameof(Queryable.All),
+             nameof(Queryable.Sum),
+             nameof(Queryable.Average),
              nameof(Queryable.OrderBy),
              nameof(Queryable.OrderByDescending),
              nameof(Queryable.ThenBy),
@@ -231,7 +233,7 @@ namespace BigQuery.EntityFrameworkCore
 
             if (CaseSelectParameterCleaner.Contains(lastMethodName) && lastButOneMethodName.Equals(nameof(Queryable.Select)))
             {
-                node = SelectParameterCleaner.Rewrite(node);
+                node = ExpressionSelectRewrite.Rewrite(node);
             }
 
             return node;

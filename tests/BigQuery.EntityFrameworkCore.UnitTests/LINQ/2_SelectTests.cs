@@ -1,6 +1,6 @@
 ﻿namespace BigQuery.EntityFrameworkCore.UnitTests.LINQ;
 
-public class SelectTests
+public class SelectTests : IDisposable
 {
     private readonly BqTestContext _context;
     private readonly Mock<IExecuteQuery> _mock;
@@ -129,7 +129,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
         _context.Data.Products.Select(x => x.Id).Count();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -144,7 +143,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Returns(0).Verifiable();
         _context.Data.Products.Select(x => x.Id).First();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -159,7 +157,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Returns(0).Verifiable();
         _context.Data.Products.Select(x => x.Id).FirstOrDefault();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -174,7 +171,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Returns(0).Verifiable();
         _context.Data.Products.Select(x => x.Id).Single();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -189,7 +185,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Returns(0).Verifiable();
         _context.Data.Products.Select(x => x.Id).SingleOrDefault();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -212,7 +207,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Returns(1).Verifiable();
         _context.Data.Products.Select(x => x.Id).Last();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -235,7 +229,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Returns(1).Verifiable();
         _context.Data.Products.Select(x => x.Id).LastOrDefault();
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -250,7 +243,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
         _context.Data.Products.Select(x => x.Id).All(x => x > 999);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -265,7 +257,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
         _context.Data.Products.Select(x => x.Id).Any(x => x > 999);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -280,7 +271,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
         _context.Data.Products.Select(x => x.Id).Max(x => x);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -295,7 +285,6 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
         _context.Data.Products.Select(x => x.Id).Min(x => x);
         _mock.Verify();
-        _mock.Reset();
     }
 
     [Fact]
@@ -310,23 +299,24 @@ public class SelectTests
         _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
         _context.Data.Products.Select(x => x.Id).Sum(x => x);
         _mock.Verify();
-        _mock.Reset();
     }
 
-    //[Fact]
-    //public void DataProducts_Average_VerifyExpectedQuery()
-    //{
-    //    string expected = @"
-    //SELECT
-    //    AVG(Product.Id) 
-    //FROM
-    //    data.Product AS Product 
-    //WHERE
-    //    Product.Id = 1";
+    [Fact]
+    public void DataProducts_Average_VerifyExpectedQuery()
+    {
+        string expected = @"
+    SELECT
+        AVG(Product.Id) 
+    FROM
+        data.Product AS Product";
 
-    //    _mock.Setup(x => x.GetResult<double>(expected)).Verifiable();
-    //    _context.Data.Products.Select(x => x.Id).Average(x => x);
-    //    _mock.Verify();
-    //    _mock.Reset();
-    //}
+        _mock.Setup(x => x.GetResult<double>(expected)).Verifiable();
+        _context.Data.Products.Select(x => x.Id).Average(x => x);
+        _mock.Verify();
+    }
+
+    public void Dispose()
+    {
+        _mock.Reset();
+    }
 }

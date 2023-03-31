@@ -92,7 +92,7 @@ namespace BigQuery.EntityFrameworkCore
         protected override Expression VisitSelect(SelectExpression node)
         {
             _stringBuilder.Append("SELECT ");
-            Visit(node.Seletor);
+            Visit(node.Predicate);
             Visit(node.Source);
             return node;
         }
@@ -109,7 +109,7 @@ namespace BigQuery.EntityFrameworkCore
         {
             Visit(node.Source);
             _stringBuilder.Append(" ORDER BY ");
-            Visit(node.Seletor);
+            Visit(node.Predicate);
             return node;
         }
 
@@ -157,7 +157,7 @@ namespace BigQuery.EntityFrameworkCore
         {
             Visit(node.Source);
 
-            if (CallStack.Contains(nameof(VisitWhere)))
+            if (CallStack.Contains(nameof(Queryable.Where)))
             {
                 _stringBuilder.Append(" AND ");
             }
@@ -183,7 +183,7 @@ namespace BigQuery.EntityFrameworkCore
         protected override Expression VisitAll(AllExpression node)
         {
             _stringBuilder.Append("SELECT COUNTIF (");
-            Visit(node.Seletor);
+            Visit(node.Predicate);
             _stringBuilder.Append(')');
             _stringBuilder.Append(" = COUNT(*)");
             Visit(node.Source);
@@ -193,7 +193,7 @@ namespace BigQuery.EntityFrameworkCore
         protected override Expression VisitAny(AnyExpression node)
         {
             _stringBuilder.Append("SELECT COUNTIF (");
-            Visit(node.Seletor);
+            Visit(node.Predicate);
             _stringBuilder.Append(')');
             _stringBuilder.Append(" > 0");
             Visit(node.Source);
@@ -204,18 +204,27 @@ namespace BigQuery.EntityFrameworkCore
         {
             _stringBuilder.Append("SELECT COUNT(*)");
             Visit(node.Source);
+
+            if (node.Predicate != null)
+            {
+                _stringBuilder.Append(" WHERE ");
+                Visit(node.Predicate);
+            }
+
             return node;
         }
 
         protected override Expression VisitDistinct(DistinctExpression node)
         {
+            _stringBuilder.Append("SELECT DISTINCT ");
+            Visit(node.Source);
             return node;
         }
 
         protected override Expression VisitMin(MinExpression node)
         {
             _stringBuilder.Append("SELECT MIN(");
-            Visit(node.Seletor);
+            Visit(node.Predicate);
             _stringBuilder.Append(')');
             Visit(node.Source);
 
@@ -225,7 +234,7 @@ namespace BigQuery.EntityFrameworkCore
         protected override Expression VisitMax(MaxExpression node)
         {
             _stringBuilder.Append("SELECT MAX(");
-            Visit(node.Seletor);
+            Visit(node.Predicate);
             _stringBuilder.Append(')');
             Visit(node.Source);
 
@@ -235,7 +244,7 @@ namespace BigQuery.EntityFrameworkCore
         protected override Expression VisitSum(SumExpression node)
         {
             _stringBuilder.Append("SELECT SUM(");
-            Visit(node.Seletor);
+            Visit(node.Predicate);
             _stringBuilder.Append(')');
             Visit(node.Source);
 
@@ -245,7 +254,7 @@ namespace BigQuery.EntityFrameworkCore
         protected override Expression VisitAverage(AverageExpression node)
         {
             _stringBuilder.Append("SELECT AVG(");
-            Visit(node.Seletor);
+            Visit(node.Predicate);
             _stringBuilder.Append(')');
             Visit(node.Source);
 
@@ -298,6 +307,11 @@ namespace BigQuery.EntityFrameworkCore
             if (!_stringBuilder.ToString().StartsWith("SELECT "))
             {
                 _stringBuilder.Append("SELECT ");
+                _stringBuilder.Append(string.Join(", ", GetColumns(node.TableType)));
+            }
+
+            if (_stringBuilder.ToString().StartsWith("SELECT DISTINCT"))
+            {
                 _stringBuilder.Append(string.Join(", ", GetColumns(node.TableType)));
             }
 
