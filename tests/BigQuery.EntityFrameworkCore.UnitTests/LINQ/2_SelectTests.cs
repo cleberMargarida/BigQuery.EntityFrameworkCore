@@ -59,7 +59,7 @@ public class SelectTests
     [Fact]
     public void DataProducts_SelectIdOrderByIdToString_ShouldReturnExpected()
     {
-        var actual = _context.Data.Products.Select(x => x.Id).OrderBy(Id => Id).ToString();
+        var actual = _context.Data.Products.Select(x => x.Id).OrderBy(x => x).ToString();
         string expected =
     @"
     SELECT
@@ -75,7 +75,7 @@ public class SelectTests
     [Fact]
     public void DataProducts_SelectIdOrderByDescendingIdToString_ShouldReturnExpected()
     {
-        var actual = _context.Data.Products.Select(x => x.Id).OrderByDescending(Id => Id).ToString();
+        var actual = _context.Data.Products.Select(x => x.Id).OrderByDescending(x => x).ToString();
         var expected =
     @"
     SELECT
@@ -243,16 +243,12 @@ public class SelectTests
     {
         string expected = @"
     SELECT
-        COUNTIF (Id > 999) = COUNT(*) 
+        COUNTIF (Product.Id > 999) = COUNT(*) 
     FROM
-        (      
-        SELECT
-            Product.Id       
-        FROM
-            data.Product AS Product) AS Product";
+        data.Product AS Product";
 
         _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
-        _context.Data.Products.Select(x => x.Id).All(Id => Id > 999);
+        _context.Data.Products.Select(x => x.Id).All(x => x > 999);
         _mock.Verify();
         _mock.Reset();
     }
@@ -262,70 +258,60 @@ public class SelectTests
     {
         string expected = @"
     SELECT
-        COUNTIF (Id > 999) > 0 
+        COUNTIF (Product.Id > 999) > 0 
     FROM
-        (      
-        SELECT
-            Product.Id       
-        FROM
-            data.Product AS Product) AS Product";
+        data.Product AS Product";
 
         _mock.Setup(x => x.GetResult<bool>(expected)).Verifiable();
-        _context.Data.Products.Select(x => x.Id).Any(Id => Id > 999);
+        _context.Data.Products.Select(x => x.Id).Any(x => x > 999);
         _mock.Verify();
         _mock.Reset();
     }
 
-    //[Fact]
-    //public void DataProducts_Max_VerifyExpectedQuery()
-    //{
-    //    string expected = @"
-    //SELECT
-    //    MAX(Product.Id) 
-    //FROM
-    //    data.Product AS Product 
-    //WHERE
-    //    Product.Id = 1";
+    [Fact]
+    public void DataProducts_Max_VerifyExpectedQuery()
+    {
+        string expected = @"
+    SELECT
+        MAX(Product.Id) 
+    FROM
+        data.Product AS Product";
 
-    //    _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
-    //    _context.Data.Products.Select(x => x.Id).Max(Id => Id);
-    //    _mock.Verify();
-    //    _mock.Reset();
-    //}
+        _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
+        _context.Data.Products.Select(x => x.Id).Max(x => x);
+        _mock.Verify();
+        _mock.Reset();
+    }
 
-    //[Fact]
-    //public void DataProducts_Min_VerifyExpectedQuery()
-    //{
-    //    string expected = @"
-    //SELECT
-    //    MIN(Product.Id) 
-    //FROM
-    //    data.Product AS Product 
-    //WHERE
-    //    Product.Id = 1";
+    [Fact]
+    public void DataProducts_Min_VerifyExpectedQuery()
+    {
+        string expected = @"
+    SELECT
+        MIN(Product.Id) 
+    FROM
+        data.Product AS Product";
 
-    //    _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
-    //    _context.Data.Products.Select(x => x.Id).Min(Id => Id);
-    //    _mock.Verify();
-    //    _mock.Reset();
-    //}
+        _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
+        _context.Data.Products.Select(x => x.Id).Min(x => x);
+        _mock.Verify();
+        _mock.Reset();
+    }
 
-    //[Fact]
-    //public void DataProducts_Sum_VerifyExpectedQuery()
-    //{
-    //    string expected = @"
-    //SELECT
-    //    SUM(Product.Id) 
-    //FROM
-    //    data.Product AS Product 
-    //WHERE
-    //    Product.Id = 1";
+    [Fact]
+    public void DataProducts_Sum_VerifyExpectedQuery()
+    {
+        string expected = @"
+    SELECT
+        SUM(Product.Id) 
+    FROM
+        data.Product AS Product";
 
-    //    _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
-    //    _context.Data.Products.Select(x => x.Id).Sum(Id => Id);
-    //    _mock.Verify();
-    //    _mock.Reset();
-    //}
+        _mock.Setup(x => x.GetResult<int>(expected)).Verifiable();
+        _context.Data.Products.Select(x => x.Id).Sum(x => x);
+        _mock.Verify();
+        _mock.Reset();
+    }
 
     //[Fact]
     //public void DataProducts_Average_VerifyExpectedQuery()
@@ -339,7 +325,7 @@ public class SelectTests
     //    Product.Id = 1";
 
     //    _mock.Setup(x => x.GetResult<double>(expected)).Verifiable();
-    //    _context.Data.Products.Select(x => x.Id).Average(Id => Id);
+    //    _context.Data.Products.Select(x => x.Id).Average(x => x);
     //    _mock.Verify();
     //    _mock.Reset();
     //}

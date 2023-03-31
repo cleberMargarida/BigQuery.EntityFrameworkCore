@@ -31,12 +31,12 @@ namespace BigQuery.EntityFrameworkCore
 
             TResult? result = _executeQuery.GetResult<TResult>(query);
 
-            if (visitor.LastCall is nameof(Enumerable.FirstOrDefault) or 
-                                    nameof(Enumerable.LastOrDefault) or 
-                                    nameof(Enumerable.SingleOrDefault)) 
-            {
-                return result!;
-            }
+            //if (visitor.LastCall is nameof(Enumerable.FirstOrDefault) or 
+            //                        nameof(Enumerable.LastOrDefault) or 
+            //                        nameof(Enumerable.SingleOrDefault)) 
+            //{
+            //    return result!;
+            //}
 
             return result ?? throw new InvalidOperationException(ErrorMessages.NoSequenceErrorMessage);
         }

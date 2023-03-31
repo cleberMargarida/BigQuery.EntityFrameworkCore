@@ -8,7 +8,7 @@ namespace BigQuery.EntityFrameworkCore
         private readonly BigQueryExpressionVisitor _visitor;
 
         public Type ElementType => typeof(TSource);
-        public Expression Expression { get; }
+        public Expression? Expression { get; }
         public IQueryProvider Provider { get; }
 
         private BigQueryQueryable(IQueryProvider provider, BigQueryExpressionVisitor visitor)
@@ -40,7 +40,7 @@ namespace BigQuery.EntityFrameworkCore
         string? _command;
         public override string ToString()
         {
-            return _command ??= _visitor.Print(this.Expression);
+            return _command ??= _visitor.Print(this.Expression ?? throw new ArgumentNullException());
         }
     }
 }

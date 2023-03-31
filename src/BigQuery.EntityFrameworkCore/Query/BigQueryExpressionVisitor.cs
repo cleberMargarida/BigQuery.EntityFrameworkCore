@@ -1,7 +1,5 @@
 ﻿using BigQuery.EntityFrameworkCore.Utils;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -10,16 +8,10 @@ using System.Text;
 [assembly: InternalsVisibleTo("BigQuery.EntityFrameworkCore.UnitTests", AllInternalsVisible = true)]
 namespace BigQuery.EntityFrameworkCore
 {
-    public interface IExpressionPrinter
-    {
-        Expression? Visit(Expression? expression);
-        internal string Print(Expression expression);
-    }
-
-    public class BigQueryExpressionVisitor : ExpressionVisitor, IExpressionPrinter
+    partial class BigQueryExpressionVisitor : BigQueryExpressionVisitorBase
     {
         protected readonly StringBuilder _stringBuilder = new StringBuilder();
-        private static readonly Dictionary<ExpressionType, string> _binaryOperandMap = new Dictionary<ExpressionType, string>
+        private static readonly Dictionary<ExpressionType, string> _binaryOperandMap = new()
         {
             {
                 ExpressionType.Assign,
@@ -95,253 +87,179 @@ namespace BigQuery.EntityFrameworkCore
             }
         };
 
-        internal string Print(Expression expression)
+        protected List<TableExpression> Tables { get; private set; } = new();
+
+        protected override Expression VisitSelect(SelectExpression node)
         {
-            Visit(expression);
-            return _stringBuilder.ToString().FormatSql();
+            _stringBuilder.Append("SELECT ");
+            Visit(node.Seletor);
+            Visit(node.Source);
+            return node;
         }
 
-        protected string? LastTable { get; set; }
-        internal string? LastCall { get; private set; }
-
-        protected BigQueryExpressionVisitor GetNewVisitor() => new BigQueryExpressionVisitor();
-
-        [return: NotNullIfNotNull("expression")]
-        public override Expression? Visit(Expression? expression)
+        protected override Expression VisitWhere(WhereExpression node)
         {
-            if (expression == null)
+            Visit(node.Source);
+            _stringBuilder.Append(" WHERE ");
+            Visit(node.Condition);
+            return node;
+        }
+
+        protected override Expression VisitOrderBy(OrderByExpression node)
+        {
+            Visit(node.Source);
+            _stringBuilder.Append(" ORDER BY ");
+            Visit(node.Seletor);
+            return node;
+        }
+
+        protected override Expression VisitOrderByDescending(OrderByDescendingExpression node)
+        {
+            VisitOrderBy(node);
+            _stringBuilder.Append(" DESC");
+            return node;
+        }
+
+        protected override Expression VisitThenBy(ThenByExpression node)
+        {
+            return node;
+        }
+
+        protected override Expression VisitThenByDescending(ThenByDescendingExpression node)
+        {
+            return node;
+        }
+
+        protected override Expression VisitTake(TakeExpression node)
+        {
+            Visit(node.Source);
+            _stringBuilder.Append(" LIMIT ");
+            Visit(node.Number);
+            return node;
+        }
+
+        protected override Expression VisitSkip(SkipExpression node)
+        {
+            Visit(node.Take);
+            _stringBuilder.Append(" OFFSET ");
+            Visit(node.Number);
+            return node;
+        }
+
+        protected override Expression VisitFirst(FirstExpression node)
+        {
+            Visit(node.Source);
+            _stringBuilder.Append(" LIMIT 1");
+            return node;
+        }
+
+        protected override Expression VisitLast(LastExpression node)
+        {
+            Visit(node.Source);
+
+            if (CallStack.Contains(nameof(VisitWhere)))
             {
-                return null;
+                _stringBuilder.Append(" AND ");
+            }
+            else
+            {
+                _stringBuilder.Append(" WHERE ");
             }
 
-            switch (expression!.NodeType)
-            {
-                case ExpressionType.Add:
-                case ExpressionType.And:
-                case ExpressionType.AndAlso:
-                case ExpressionType.ArrayIndex:
-                case ExpressionType.Coalesce:
-                case ExpressionType.Divide:
-                case ExpressionType.Equal:
-                case ExpressionType.ExclusiveOr:
-                case ExpressionType.GreaterThan:
-                case ExpressionType.GreaterThanOrEqual:
-                case ExpressionType.LessThan:
-                case ExpressionType.LessThanOrEqual:
-                case ExpressionType.Modulo:
-                case ExpressionType.Multiply:
-                case ExpressionType.NotEqual:
-                case ExpressionType.Or:
-                case ExpressionType.OrElse:
-                case ExpressionType.Subtract:
-                case ExpressionType.Assign:
-                    VisitBinary((BinaryExpression)expression);
-                    break;
-                case ExpressionType.Block:
-                    VisitBlock((BlockExpression)expression);
-                    break;
-                case ExpressionType.Conditional:
-                    VisitConditional((ConditionalExpression)expression);
-                    break;
-                case ExpressionType.Constant:
-                    VisitConstant((ConstantExpression)expression);
-                    break;
-                case ExpressionType.Lambda:
-                    base.Visit(expression);
-                    break;
-                case ExpressionType.Goto:
-                    VisitGoto((GotoExpression)expression);
-                    break;
-                case ExpressionType.Label:
-                    VisitLabel((LabelExpression)expression);
-                    break;
-                case ExpressionType.MemberAccess:
-                    VisitMember((MemberExpression)expression);
-                    break;
-                case ExpressionType.MemberInit:
-                    VisitMemberInit((MemberInitExpression)expression);
-                    break;
-                case ExpressionType.Call:
-                    VisitMethodCall((MethodCallExpression)expression);
-                    break;
-                case ExpressionType.New:
-                    VisitNew((NewExpression)expression);
-                    break;
-                case ExpressionType.NewArrayInit:
-                    VisitNewArray((NewArrayExpression)expression);
-                    break;
-                case ExpressionType.Parameter:
-                    VisitParameter((ParameterExpression)expression);
-                    break;
-                case ExpressionType.Convert:
-                case ExpressionType.Not:
-                case ExpressionType.Quote:
-                case ExpressionType.TypeAs:
-                case ExpressionType.Throw:
-                    VisitUnary((UnaryExpression)expression);
-                    break;
-                case ExpressionType.Default:
-                    VisitDefault((DefaultExpression)expression);
-                    break;
-                case ExpressionType.Try:
-                    VisitTry((TryExpression)expression);
-                    break;
-                case ExpressionType.Index:
-                    VisitIndex((IndexExpression)expression);
-                    break;
-                case ExpressionType.TypeIs:
-                    VisitTypeBinary((TypeBinaryExpression)expression);
-                    break;
-                case ExpressionType.Switch:
-                    VisitSwitch((SwitchExpression)expression);
-                    break;
-                case ExpressionType.Invoke:
-                    VisitInvocation((InvocationExpression)expression);
-                    break;
-                case ExpressionType.Extension:
-                    VisitExtension(expression);
-                    break;
-            }
+            var lastSource = Tables.Last();
+            var keyColumn = lastSource.TableType.Name + "." + lastSource.TableType.KeyColumn();
 
-            return expression;
-        }
-
-        protected override Expression VisitMethodCall(MethodCallExpression node)
-        {
-            if (node.GetCallChainMethodsName().LastButOne() is nameof(Queryable.Select))
-            {
-                node = ExpressionUnraveler.Rewrite(node);
-            }
-
-            switch (node.Method.Name)
-            {
-                case nameof(Enumerable.Select): VisitSelect(node); LastCall = nameof(Enumerable.Select); break;
-                case nameof(Enumerable.Where): VisitWhere(node); LastCall = nameof(Enumerable.Where); break;
-                case nameof(Enumerable.OrderBy): VisitOrderBy(node); LastCall = nameof(Enumerable.OrderBy); break;
-                case nameof(Enumerable.OrderByDescending): VisitOrderByDescending(node); LastCall = nameof(Enumerable.OrderByDescending); break;
-                case nameof(Enumerable.ThenBy): VisitThenBy(node); LastCall = nameof(Enumerable.ThenBy); break;
-                case nameof(Enumerable.ThenByDescending): VisitThenByDescending(node); LastCall = nameof(Enumerable.ThenByDescending); break;
-                case nameof(Enumerable.Take): VisitTake(node); LastCall = nameof(Enumerable.Take); break;
-                case nameof(Enumerable.Skip): VisitSkip(node); LastCall = nameof(Enumerable.Skip); break;
-                case nameof(Enumerable.First): VisitFirst(node); LastCall = nameof(Enumerable.First); break;
-                case nameof(Enumerable.FirstOrDefault): VisitFirst(node); LastCall = nameof(Enumerable.FirstOrDefault); break;
-                case nameof(Enumerable.Single): VisitFirst(node); LastCall = nameof(Enumerable.Single); break;
-                case nameof(Enumerable.SingleOrDefault): VisitFirst(node); LastCall = nameof(Enumerable.SingleOrDefault); break;
-                case nameof(Enumerable.Last): VisitLast(node); LastCall = nameof(Enumerable.Last); break;
-                case nameof(Enumerable.LastOrDefault): VisitLast(node); LastCall = nameof(Enumerable.LastOrDefault); break;
-                case nameof(Enumerable.All): VisitAll(node); LastCall = nameof(Enumerable.All); break;
-                case nameof(Enumerable.Any): VisitAny(node); LastCall = nameof(Enumerable.Any); break;
-                case nameof(Enumerable.Count): VisitCount(node); LastCall = nameof(Enumerable.Count); break;
-                case nameof(Enumerable.Distinct): VisitDistinct(node); LastCall = nameof(Enumerable.Distinct); break;
-                case nameof(Enumerable.Max): VisitMax(node); LastCall = nameof(Enumerable.Max); break;
-                case nameof(Enumerable.Min): VisitMin(node); LastCall = nameof(Enumerable.Min); break;
-                case nameof(Enumerable.Sum): VisitSum(node); LastCall = nameof(Enumerable.Sum); break;
-                case nameof(Enumerable.Average): VisitAverage(node); LastCall = nameof(Enumerable.Average); break;
-                case nameof(Enumerable.Join): VisitJoin(node); LastCall = nameof(Enumerable.Join); break;
-                default: throw new NotSupportedException(string.Format(ErrorMessages.CallExpressionNotSupported, node));
-            }
-
+            _stringBuilder.Append(keyColumn);
+            _stringBuilder.Append(" = ");
+            _stringBuilder.Append('(');
+            _stringBuilder.Append("SELECT MAX(");
+            _stringBuilder.Append(keyColumn);
+            _stringBuilder.Append(')');
+            VisitConstantTable(lastSource);
+            _stringBuilder.Append(')');
             return node;
         }
 
-        protected Expression VisitSelect(MethodCallExpression node)
+        protected override Expression VisitAll(AllExpression node)
+        {
+            _stringBuilder.Append("SELECT COUNTIF (");
+            Visit(node.Seletor);
+            _stringBuilder.Append(')');
+            _stringBuilder.Append(" = COUNT(*)");
+            Visit(node.Source);
+            return node;
+        }
+
+        protected override Expression VisitAny(AnyExpression node)
+        {
+            _stringBuilder.Append("SELECT COUNTIF (");
+            Visit(node.Seletor);
+            _stringBuilder.Append(')');
+            _stringBuilder.Append(" > 0");
+            Visit(node.Source);
+            return node;
+        }
+
+        protected override Expression VisitCount(CountExpression node)
+        {
+            _stringBuilder.Append("SELECT COUNT(*)");
+            Visit(node.Source);
+            return node;
+        }
+
+        protected override Expression VisitDistinct(DistinctExpression node)
         {
             return node;
         }
 
-        protected Expression VisitWhere(MethodCallExpression node)
+        protected override Expression VisitMin(MinExpression node)
         {
+            _stringBuilder.Append("SELECT MIN(");
+            Visit(node.Seletor);
+            _stringBuilder.Append(')');
+            Visit(node.Source);
+
             return node;
         }
 
-        protected Expression VisitOrderBy(MethodCallExpression node)
+        protected override Expression VisitMax(MaxExpression node)
         {
+            _stringBuilder.Append("SELECT MAX(");
+            Visit(node.Seletor);
+            _stringBuilder.Append(')');
+            Visit(node.Source);
+
             return node;
         }
 
-        protected Expression VisitOrderByDescending(MethodCallExpression node)
+        protected override Expression VisitSum(SumExpression node)
         {
+            _stringBuilder.Append("SELECT SUM(");
+            Visit(node.Seletor);
+            _stringBuilder.Append(')');
+            Visit(node.Source);
+
             return node;
         }
 
-        protected Expression VisitThenBy(MethodCallExpression node)
+        protected override Expression VisitAverage(AverageExpression node)
         {
+            _stringBuilder.Append("SELECT AVG(");
+            Visit(node.Seletor);
+            _stringBuilder.Append(')');
+            Visit(node.Source);
+
             return node;
         }
 
-        protected Expression VisitThenByDescending(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitTake(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitSkip(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitFirst(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitLast(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitAll(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitAny(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitCount(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitDistinct(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitMin(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitMax(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitSum(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitAverage(MethodCallExpression node)
-        {
-            return node;
-        }
-
-        protected Expression VisitJoin(MethodCallExpression node)
+        protected override Expression VisitJoin(JoinExpression node)
         {
             return node;
         }
 
         protected override Expression VisitConstant(ConstantExpression node) => node.Value switch
         {
-            Table table => VisitConstantTable(table, node),
+            Table => VisitConstantTable((TableExpression)node),
             String str => VisitConstantString(str, node),
             DateTime dateTime => VisitConstantDateTime(dateTime, node),
             TimeSpan timeSpan => VisitConstantTimeSpan(timeSpan, node),
@@ -372,8 +290,18 @@ namespace BigQuery.EntityFrameworkCore
             return node;
         }
 
-        protected Expression VisitConstantTable(Table table, ConstantExpression node)
+        protected override Expression VisitConstantTable(TableExpression node)
         {
+            var nodeString = node.ToString();
+            Tables.Add(node);
+
+            if (!_stringBuilder.ToString().StartsWith("SELECT "))
+            {
+                _stringBuilder.Append("SELECT ");
+                _stringBuilder.Append(string.Join(", ", GetColumns(node.TableType)));
+            }
+
+            _stringBuilder.Append(nodeString);
             return node;
         }
 
@@ -399,7 +327,8 @@ namespace BigQuery.EntityFrameworkCore
         {
             var source = node.Expression.Type.Name;
             var member = node.Member.GetCustomAttribute<ColumnAttribute>()?.Name ?? node.Member.Name;
-            _stringBuilder.Append(source + "." + member);
+            var column = source + "." + member;
+            _stringBuilder.Append(column);
             return node;
         }
 
@@ -429,31 +358,11 @@ namespace BigQuery.EntityFrameworkCore
             return node;
         }
 
-        protected override Expression VisitParameter(ParameterExpression node)
+        protected string[] GetColumns(Type tableType)
         {
-            return node;
+            var prefix = tableType.Name;
+            var propertyInfos = tableType.GetProperties();
+            return propertyInfos.Select(p => prefix + "." + (p.GetCustomAttribute<ColumnAttribute>()?.Name ?? p.Name)).ToArray();
         }
-
-        protected string[] GetColumnsFromProperties(IEnumerable<PropertyInfo> propertyInfos, string? lastTable = null)
-        {
-            var prefix = lastTable ?? LastTable;
-
-            return propertyInfos.Select
-                (p => prefix + "." +
-                (p.GetCustomAttribute<ColumnAttribute>()?.Name ?? p.Name))
-                .ToArray();
-        }
-
-        #region interface methods
-        Expression? IExpressionPrinter.Visit(Expression? expression)
-        {
-            return this.Visit(expression);
-        }
-
-        string IExpressionPrinter.Print(Expression expression)
-        {
-            return this.Print(expression);
-        }
-        #endregion
     }
 }

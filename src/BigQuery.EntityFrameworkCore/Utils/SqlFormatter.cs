@@ -91,7 +91,7 @@ namespace BigQuery.EntityFrameworkCore.Utils
             }
         }
 
-        public SqlFormatter(string sql)
+        internal SqlFormatter(string sql)
         {
             tokens = new Queue<string>(SplitAndKeep(sql, new char[] { '(', ')', '+', '*', '/', '-', '=', '<', '>', '\'', '`', '\\', '"', '[', ']', ',', ' ', '\n', '\r', '\f', '\t' }));
         }

@@ -41,7 +41,7 @@ namespace BigQuery.EntityFrameworkCore
     public class Table<TSource> : Table, IQueryable<TSource>
     {
         public Table(IQueryProvider provider,
-                     BigQueryExpressionVisitor visitor,
+                     IExpressionPrinter visitor,
                      string datasetName,
                      string tableName) : 
             base(provider,
