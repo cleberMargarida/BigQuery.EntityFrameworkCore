@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	<LangVersion>preview</LangVersion>
+    <PackageIcon>daisy.png</PackageIcon>
+    <PackageReadmeFile>README.MD</PackageReadmeFile>
+    <Version>0.1.2</Version>
+    <Authors>Cleber Margarida</Authors>
+    <Description>$(AssemblyName) follows the Entity Framework pattern to provide a high-level abstraction over the database. It also to provide mechanisms for defining entities, mapping them to database tables, and performing CRUD operations and queries using a simplified syntax.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/cleberMargarida/BigQuery.EntityFrameworkCore</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/cleberMargarida/BigQuery.EntityFrameworkCore</PackageProjectUrl>
+    <PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\daisy.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.MD">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Auth" Version="1.59.0" />
+    <PackageReference Include="Google.Cloud.BigQuery.V2" Version="3.2.0" />
+    <PackageReference Include="System.Linq.Queryable" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>

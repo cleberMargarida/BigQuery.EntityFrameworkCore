@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <Version>0.1.2</Version>
+    <Authors>Cleber Margarida</Authors>
+    <Description>BigQuery.EntityFrameworkCore extension for Microsoft.Extensions.DependencyInjection</Description>
+    <PackageProjectUrl>https://github.com/cleberMargarida/BigQuery.EntityFrameworkCore/tree/master/src/BigQuery.EntityFrameworkCore.DependencyInjection</PackageProjectUrl>
+    <PackageIcon>daisy.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/cleberMargarida/BigQuery.EntityFrameworkCore/tree/master/src/BigQuery.EntityFrameworkCore.DependencyInjection</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\daisy.png">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BigQuery.EntityFrameworkCore" Version="0.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>
