@@ -1,46 +1,45 @@
 ﻿using System.Collections;
 using System.Linq.Expressions;
 
-namespace BigQuery.EntityFrameworkCore
+namespace BigQuery.EntityFrameworkCore;
+
+internal class BigQueryQueryable<TSource> : IOrderedQueryable<TSource>
 {
-    internal class BigQueryQueryable<TSource> : IOrderedQueryable<TSource>
+    private readonly IExpressionPrinter _visitor;
+
+    public Type ElementType => typeof(TSource);
+    public Expression? Expression { get; }
+    public IQueryProvider Provider { get; }
+
+    private BigQueryQueryable(IQueryProvider provider, IExpressionPrinter visitor)
     {
-        private readonly BigQueryExpressionVisitor _visitor;
+        this.Provider = provider;
+        _visitor = visitor;
+    }
 
-        public Type ElementType => typeof(TSource);
-        public Expression? Expression { get; }
-        public IQueryProvider Provider { get; }
+    public BigQueryQueryable(IQueryProvider provider, IQueryable<TSource> innerSource, BigQueryExpressionVisitor visitor) : this(provider, visitor)
+    {
+        this.Expression = Expression.Constant(innerSource);
+    }
 
-        private BigQueryQueryable(IQueryProvider provider, BigQueryExpressionVisitor visitor)
-        {
-            this.Provider = provider;
-            _visitor = visitor;
-        }
+    public BigQueryQueryable(IQueryProvider provider, Expression expression, IExpressionPrinter visitor) : this(provider, visitor)
+    {
+        this.Expression = expression;
+    }
 
-        public BigQueryQueryable(IQueryProvider provider, IQueryable<TSource> innerSource, BigQueryExpressionVisitor visitor) : this(provider, visitor)
-        {
-            this.Expression = Expression.Constant(innerSource);
-        }
+    public IEnumerator<TSource> GetEnumerator()
+    {
+        return this.Provider.Execute<IEnumerable<TSource>>(this.Expression).GetEnumerator();
+    }
 
-        public BigQueryQueryable(IQueryProvider provider, Expression expression, BigQueryExpressionVisitor visitor) : this(provider, visitor)
-        {
-            this.Expression = expression;
-        }
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return this.GetEnumerator();
+    }
 
-        public IEnumerator<TSource> GetEnumerator()
-        {
-            return this.Provider.Execute<IEnumerable<TSource>>(this.Expression).GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
-
-        string? _command;
-        public override string ToString()
-        {
-            return _command ??= _visitor.Print(this.Expression ?? throw new ArgumentNullException());
-        }
+    string? _command;
+    public override string ToString()
+    {
+        return _command ??= _visitor.Print(this.Expression ?? throw new ArgumentNullException());
     }
 }

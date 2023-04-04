@@ -7,7 +7,7 @@
 	<LangVersion>preview</LangVersion>
     <PackageIcon>daisy.png</PackageIcon>
     <PackageReadmeFile>README.MD</PackageReadmeFile>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <Authors>Cleber Margarida</Authors>
     <Description>$(AssemblyName) follows the Entity Framework pattern to provide a high-level abstraction over the database. It also to provide mechanisms for defining entities, mapping them to database tables, and performing CRUD operations and queries using a simplified syntax.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

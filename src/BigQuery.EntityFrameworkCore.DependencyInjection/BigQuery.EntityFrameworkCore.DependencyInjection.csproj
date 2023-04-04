@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <Nullable>enable</Nullable>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <Authors>Cleber Margarida</Authors>
     <Description>BigQuery.EntityFrameworkCore extension for Microsoft.Extensions.DependencyInjection</Description>
     <PackageProjectUrl>https://github.com/cleberMargarida/BigQuery.EntityFrameworkCore/tree/master/src/BigQuery.EntityFrameworkCore.DependencyInjection</PackageProjectUrl>
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BigQuery.EntityFrameworkCore" Version="0.1.2" />
+    <PackageReference Include="BigQuery.EntityFrameworkCore" Version="0.1.3" />
   </ItemGroup>
 
   <ItemGroup>

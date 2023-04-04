@@ -6,19 +6,19 @@ namespace System.Linq.Expressions;
 
 internal abstract class MethodCallExpressionWrapper : Expression
 {
-    private readonly MethodCallExpression _internalCall;
 
     public MethodCallExpressionWrapper(MethodCallExpression node)
     {
-        _internalCall = Call(node.Method, node.Arguments);
+        InternalCall = Call(node.Method, node.Arguments);
     }
 
-    protected ReadOnlyCollection<Expression> Arguments => _internalCall.Arguments;
+    protected MethodCallExpression InternalCall { get; }
+    protected ReadOnlyCollection<Expression> Arguments => InternalCall.Arguments;
 
-    public override ExpressionType NodeType => _internalCall.NodeType;
-    public override bool CanReduce => _internalCall.CanReduce;
-    public override Type Type => _internalCall.Type;
-    public override string ToString() => _internalCall.ToString();
+    public override ExpressionType NodeType => InternalCall.NodeType;
+    public override bool CanReduce => InternalCall.CanReduce;
+    public override Type Type => InternalCall.Type;
+    public override string ToString() => InternalCall.ToString();
 }
 
 internal abstract class SourcePredicateExpression : MethodCallExpressionWrapper
@@ -43,7 +43,7 @@ internal abstract class TakeSkipExpression : MethodCallExpressionWrapper
     public Expression Number { get; }
 }
 
-internal sealed class AllExpression : SourcePredicateExpression
+internal sealed class AllExpression : SourcePredicateSkipSelectExpression
 {
     public AllExpression(MethodCallExpression node) : base(node)
     {
@@ -79,9 +79,9 @@ internal sealed class AverageExpression : SourcePredicateExpression
     }
 }
 
-internal sealed class CountExpression : MethodCallExpressionWrapper
+internal abstract class SourcePredicateSkipSelectExpression : MethodCallExpressionWrapper
 {
-    public CountExpression(MethodCallExpression node) : base(node)
+    public SourcePredicateSkipSelectExpression(MethodCallExpression node) : base(node)
     {
         Source = node.Arguments[0];
 
@@ -96,13 +96,20 @@ internal sealed class CountExpression : MethodCallExpressionWrapper
         }
     }
 
+    public Expression Source { get; }
+    public Expression? Predicate { get; }
+}
+
+internal sealed class CountExpression : SourcePredicateSkipSelectExpression
+{
+    public CountExpression(MethodCallExpression node) : base(node)
+    {
+    }
+
     public static explicit operator CountExpression(MethodCallExpression node)
     {
         return new CountExpression(node);
     }
-
-    public Expression Source { get; }
-    public Expression? Predicate { get; }
 }
 
 internal sealed class DistinctExpression : MethodCallExpressionWrapper
@@ -139,12 +146,28 @@ internal sealed class JoinExpression : MethodCallExpressionWrapper
 {
     public JoinExpression(MethodCallExpression node) : base(node)
     {
+        Seletor = node.Arguments[4];
+        Left = node.Arguments[0];
+        Right = node.Arguments[1];
+        LeftKey = node.Arguments[2];
+        RightKey = node.Arguments[3];
     }
 
     public static explicit operator JoinExpression(MethodCallExpression node)
     {
         return new JoinExpression(node);
     }
+
+    public static explicit operator MethodCallExpression(JoinExpression node)
+    {
+        return node.InternalCall;
+    }
+
+    public Expression Seletor { get; }
+    public Expression Left { get; }
+    public Expression Right { get; }
+    public Expression LeftKey { get; }
+    public Expression RightKey { get; }
 }
 
 internal sealed class LastExpression : MethodCallExpressionWrapper
@@ -272,7 +295,7 @@ internal sealed class TableExpression : Expression
 
     public override string ToString()
     {
-        return string.Format(" FROM " + "{0}.{1} AS {2}", Value.DatasetName, Value.TableName, TableType.Name);
+        return string.Format("{0}.{1} AS {2}", Value.DatasetName, Value.TableName, TableType.Name);
     }
 
     public static explicit operator TableExpression(ConstantExpression node)
@@ -285,9 +308,15 @@ internal sealed class TableExpression : Expression
         return new TableExpression(node.NodeType, node.Type, table, node.Type.GenericTypeArguments[0]);
     }
 
-    public static explicit operator ConstantExpression(TableExpression node)
+    public static explicit operator ConstantExpression?(TableExpression node)
     {
-        return Constant(node.Value);
+        var value = node?.Value;
+        if (value is null)
+        {
+            return null;
+
+        }
+        return Constant(value);
     }
 }
 

@@ -1,50 +1,46 @@
-﻿using Google.Apis.Auth.OAuth2;
-using Google.Apis.Bigquery.v2.Data;
+﻿using BigQuery.EntityFrameworkCore.Utils;
+using Google.Apis.Auth.OAuth2;
 using Google.Cloud.BigQuery.V2;
-using BigQuery.EntityFrameworkCore.Utils;
-using System.Collections;
-using System.ComponentModel;
 
-namespace BigQuery.EntityFrameworkCore
+namespace BigQuery.EntityFrameworkCore;
+
+public delegate BigQueryClient BigQueryClientFactory(string projectId, GoogleCredential googleCredential);
+
+public interface IExecuteQuery
 {
-    public delegate BigQueryClient BigQueryClientFactory(string projectId, GoogleCredential googleCredential);
+    TResult? GetResult<TResult>(string query);
+}
 
-    public interface IExecuteQuery
+internal class ExecuteQuery : IExecuteQuery
+{
+    private readonly BqContextOptions _options;
+    private readonly BigQueryClientFactory _factory;
+    private readonly BigQueryRowParser _parser;
+
+    public ExecuteQuery(BigQueryClientFactory factory, BqContextOptions options, BigQueryRowParser parser)
     {
-        TResult? GetResult<TResult>(string query);
+        _factory = factory;
+        _options = options;
+        _parser = parser;
     }
 
-    internal class ExecuteQuery : IExecuteQuery
+    public List<BigQueryParameter> EmptyBigQueryParameters { get; } = new List<BigQueryParameter>(0);
+
+    public TResult? GetResult<TResult>(string query)
     {
-        private readonly BqContextOptions _options;
-        private readonly BigQueryClientFactory _factory;
-        private readonly BigQueryRowParser _parser;
+        using var client = GetBigQueryClient();
+        var response = client.ExecuteQuery(query, EmptyBigQueryParameters);
 
-        public ExecuteQuery(BigQueryClientFactory factory, BqContextOptions options, BigQueryRowParser parser)
+        if (response.TotalRows.GetValueOrDefault() == 0)
         {
-            _factory = factory;
-            _options = options;
-            _parser = parser;
+            return default;
         }
 
-        public List<BigQueryParameter> EmptyBigQueryParameters { get; } = new List<BigQueryParameter>(0);
+        return _parser.Parse<TResult>(response);
+    }
 
-        public TResult? GetResult<TResult>(string query)
-        {
-            using var client = GetBigQueryClient();
-            var response = client.ExecuteQuery(query, EmptyBigQueryParameters);
-
-            if (response.TotalRows.GetValueOrDefault() == 0)
-            {
-                return default;
-            }
-
-            return _parser.Parse<TResult>(response);
-        }
-
-        private BigQueryClient GetBigQueryClient()
-        {
-            return _factory.Invoke(_options.ProjectId, _options.GoogleCredential);
-        }
+    private BigQueryClient GetBigQueryClient()
+    {
+        return _factory.Invoke(_options.ProjectId, _options.GoogleCredential);
     }
 }

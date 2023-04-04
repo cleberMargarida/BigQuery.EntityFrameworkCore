@@ -3,46 +3,45 @@ using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("BigQuery.EntityFrameworkCore.DependencyInjection", AllInternalsVisible = true)]
-namespace BigQuery.EntityFrameworkCore
+namespace BigQuery.EntityFrameworkCore;
+
+using static BigQueryExpressionVisitorFactory;
+
+internal class BigQueryProvider : IQueryProvider
 {
-    internal class BigQueryProvider : IQueryProvider
+    private readonly IExecuteQuery _executeQuery;
+
+    public BigQueryProvider(IExecuteQuery executeQuery)
     {
-        private readonly IExecuteQuery _executeQuery;
+        _executeQuery = executeQuery;
+    }
 
-        public BigQueryProvider(IExecuteQuery executeQuery)
-        {
-            this._executeQuery = executeQuery;
-        }
+    protected TResult Execute<TResult>(MethodCallExpression expression)
+    {
+        var query = FactorySingleton.DefaultVisitor.Print(expression);
+        var result = _executeQuery.GetResult<TResult>(query);
 
-        public BigQueryExpressionVisitor GetBigQueryVisitor()
-        {
-            return new BigQueryExpressionVisitor();
-        }
+        return ResultCanBeDefault(expression.Method.Name) ? 
+            result! : 
+            result ?? throw new InvalidOperationException(ErrorMessages.NoSequenceErrorMessage);
+    }
 
-        public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
-        {
-            return new BigQueryQueryable<TElement>(this, expression, GetBigQueryVisitor());
-        }
+    public IQueryable<TElement> CreateQuery<TElement>(Expression expression) => 
+        new BigQueryQueryable<TElement>(this, expression, FactorySingleton.DefaultVisitor);
 
-        public TResult Execute<TResult>(Expression expression)
-        {
-            var visitor = GetBigQueryVisitor();
-            var query = visitor.Print(expression);
+    public IQueryable CreateQuery(Expression expression) => 
+        this.CreateQuery(expression);
 
-            TResult? result = _executeQuery.GetResult<TResult>(query);
+    public TResult Execute<TResult>(Expression expression) => 
+        Execute<TResult>((MethodCallExpression)expression);
 
-            if (expression is MethodCallExpression methocallExpression && methocallExpression.Method.Name is 
-                nameof(Enumerable.FirstOrDefault) or
-                nameof(Enumerable.LastOrDefault) or
-                nameof(Enumerable.SingleOrDefault))
-            {
-                return result!;
-            }
+    public object Execute(Expression expression) => 
+        this.Execute(expression);
 
-            return result ?? throw new InvalidOperationException(ErrorMessages.NoSequenceErrorMessage);
-        }
-
-        public IQueryable CreateQuery(Expression expression) => this.CreateQuery(expression);
-        public object Execute(Expression expression) => this.Execute(expression);
+    private static bool ResultCanBeDefault(string methodName)
+    {
+        return methodName is nameof(Enumerable.FirstOrDefault) or
+                             nameof(Enumerable.LastOrDefault) or
+                             nameof(Enumerable.SingleOrDefault);
     }
 }

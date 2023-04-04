@@ -361,6 +361,43 @@ public class WhereTests : IDisposable
         _context.Data.Products.Where(x => x.Id == 1).Average(x => x.Id);
         _mock.Verify();
     }
+    
+    [Fact]
+    public void DataProducts_WhereWhere_VerifyExpectedQuery()
+    {
+        string expected = @"
+    SELECT
+        Product.Id,
+        Product.ProductName 
+    FROM
+        data.Product AS Product 
+    WHERE
+        Product.Id = 1 
+        AND Product.Id = 2";
+
+        var actual = _context.Data.Products.Where(x => x.Id == 1).Where(x => x.Id == 2).ToString();
+
+        Assert.Equivalent(expected, actual);
+    }
+    
+    [Fact]
+    public void DataProducts_WhereWhereWhere_VerifyExpectedQuery()
+    {
+        string expected = @"
+    SELECT
+        Product.Id,
+        Product.ProductName 
+    FROM
+        data.Product AS Product 
+    WHERE
+        Product.Id = 1 
+        AND Product.Id = 2 
+        AND Product.Id = 3";
+
+        var actual = _context.Data.Products.Where(x => x.Id == 1).Where(x => x.Id == 2).Where(x => x.Id == 3).ToString();
+
+        Assert.Equivalent(expected, actual);
+    }
 
     public void Dispose()
     {

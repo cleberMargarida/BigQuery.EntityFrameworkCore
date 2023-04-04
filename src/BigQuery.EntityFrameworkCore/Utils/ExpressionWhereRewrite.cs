@@ -19,6 +19,13 @@ internal class ExpressionWhereRewrite : ExpressionVisitor
         return (instance._result ?? instance._root).Cast<LambdaExpression>();
     }
 
+    internal static MethodCallExpression Rewrite(MethodCallExpression node)
+    {
+        var instance = new ExpressionWhereRewrite(node);
+        instance.Visit(node);
+        return (instance._result ?? instance._root).Cast<MethodCallExpression>();
+    }
+
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         var methods = node.GetCallStack();
@@ -36,7 +43,8 @@ internal class ExpressionWhereRewrite : ExpressionVisitor
         }
 
         var parameter = predicates[0].Find<ParameterExpression>(o => o.StopOnLast);
-        var source = node.Find<ParameterExpression>(o => o.StopOnFirst);
+        var tableExpression = (ConstantExpression?)BigQueryExpressionVisitorFactory.FactorySingleton.TableVisitor.VisitTable(node);
+        var source = tableExpression as Expression ?? node.Find<ParameterExpression>(o => o.StopOnFirst)!;
         var combinedPredicate = CombinePredicates(predicates, parameter);
 
         var newExpression = Expression.Call(
@@ -49,7 +57,7 @@ internal class ExpressionWhereRewrite : ExpressionVisitor
 
         return node;
 
-        void SetResult(ParameterExpression? source, MethodCallExpression newExpression)
+        void SetResult(Expression source, MethodCallExpression newExpression)
         {
             if (_root is MethodCallExpression)
             {
@@ -60,7 +68,7 @@ internal class ExpressionWhereRewrite : ExpressionVisitor
             {
                 _result = Expression.Lambda(
                      newExpression,
-                     source
+                     (ParameterExpression)source
                  );
             }
         }
